@@ -19,7 +19,6 @@ class BaseAgent:
         self.description = description
 
         self.api_key = os.getenv("GROQ_API_KEY")
-        print("setting api key", self.api_key)
 
     def get_response(self, prompt):
 

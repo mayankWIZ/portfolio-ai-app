@@ -8,7 +8,7 @@ function Chat({ agentType, initialMessage, agentInitials, directQuestion }) {
   const messagesEndRef = useRef(null);
   const [processedQuestions, setProcessedQuestions] = useState([]);
 
-  const API_BASE_URL = "http://127.0.0.1:5001";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
