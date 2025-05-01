@@ -8,7 +8,7 @@ function Chat({ agentType, initialMessage, agentInitials, directQuestion }) {
   const messagesEndRef = useRef(null);
   const [processedQuestions, setProcessedQuestions] = useState([]);
 
-  const API_BASE_URL = import.meta.env.API_BASE_URL;
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
