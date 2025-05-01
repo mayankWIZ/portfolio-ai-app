@@ -16,6 +16,9 @@ RUN apt-get update && \
 # Check Node.js and npm versions
 RUN node -v && npm -v
 
+# Create a custom user
+RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
+
 # Set working directory
 WORKDIR /app
 
@@ -27,6 +30,9 @@ RUN npm ci
 
 # Copy the rest of the application
 COPY . .
+
+RUN chown -R appuser:appuser /app
+USER appuser
 
 # Build the application
 RUN npm run build

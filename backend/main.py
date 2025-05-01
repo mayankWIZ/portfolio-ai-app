@@ -377,4 +377,4 @@ if __name__ == "__main__":
         response.headers["Expires"] = "0"
         return response
 
-    app.run(host="0.0.0.0", port=5001, debug=True, use_reloader=False, threaded=True)
+    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False, threaded=True)
