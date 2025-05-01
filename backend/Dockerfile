@@ -28,7 +28,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 COPY . .
 
 RUN chown -R 10001:10001 /app
-USER appuser
+USER 10001
 
 # Expose the port
 EXPOSE 8000

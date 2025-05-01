@@ -33,7 +33,7 @@ RUN npm ci
 COPY . .
 
 RUN chown -R 10001:10001 /app
-USER appuser
+USER 10001
 
 # Build the application
 RUN npm run build
