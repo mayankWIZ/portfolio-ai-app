@@ -12,7 +12,8 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a custom user
-RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
+RUN groupadd -g 10001 appgroup && \
+    useradd -u 10001 -g appgroup -m -d /home/appuser appuser
 
 # Set working directory
 WORKDIR /app
@@ -26,7 +27,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Copy your application code
 COPY . .
 
-RUN chown -R appuser:appuser /app
+RUN chown -R 10001:10001 /app
 USER appuser
 
 # Expose the port

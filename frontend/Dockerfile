@@ -17,7 +17,8 @@ RUN apt-get update && \
 RUN node -v && npm -v
 
 # Create a custom user
-RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
+RUN groupadd -g 10001 appgroup && \
+    useradd -u 10001 -g appgroup -m -d /home/appuser appuser
 
 # Set working directory
 WORKDIR /app
@@ -31,7 +32,7 @@ RUN npm ci
 # Copy the rest of the application
 COPY . .
 
-RUN chown -R appuser:appuser /app
+RUN chown -R 10001:10001 /app
 USER appuser
 
 # Build the application
