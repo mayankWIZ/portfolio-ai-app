@@ -29,17 +29,18 @@ COPY package.json package-lock.json* ./
 # Install dependencies
 RUN npm ci
 
+# Install a simple server to serve the static files
+RUN npm install -g serve
+
 # Copy the rest of the application
 COPY . .
 
 RUN chown -R 10001:10001 /app
+
 USER 10001
 
 # Build the application
 RUN npm run build
-
-# Install a simple server to serve the static files
-RUN npm install -g serve
 
 # Expose the port
 EXPOSE 3000
