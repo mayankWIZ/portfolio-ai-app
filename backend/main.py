@@ -5,6 +5,14 @@ import json
 import requests
 from flask_cors import CORS
 
+from backend.agents import (
+    WelcomeAgent,
+    ProjectAgent,
+    CareerAgent,
+    ClientAgent,
+    ResearchAgent,
+)
+
 
 load_dotenv()
 
@@ -13,188 +21,188 @@ app = Flask(__name__)
 CORS(app)
 
 
-class BaseAgent:
-    def __init__(self, name, description):
-        self.name = name
-        self.description = description
+# class BaseAgent:
+#     def __init__(self, name, description):
+#         self.name = name
+#         self.description = description
 
-        self.api_key = os.getenv("GROQ_API_KEY")
+#         self.api_key = os.getenv("GROQ_API_KEY")
 
-    def get_response(self, prompt):
+#     def get_response(self, prompt):
 
-        try:
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            }
+#         try:
+#             headers = {
+#                 "Authorization": f"Bearer {self.api_key}",
+#                 "Content-Type": "application/json",
+#             }
 
-            data = {
-                "model": "llama3-8b-8192",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": f"You are {self.name}, {self.description}. Respond in a helpful, concise, and professional manner.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                "temperature": 0.7,
-                "max_tokens": 500,
-            }
+#             data = {
+#                 "model": "llama3-8b-8192",
+#                 "messages": [
+#                     {
+#                         "role": "system",
+#                         "content": f"You are {self.name}, {self.description}. Respond in a helpful, concise, and professional manner.",
+#                     },
+#                     {"role": "user", "content": prompt},
+#                 ],
+#                 "temperature": 0.7,
+#                 "max_tokens": 500,
+#             }
 
-            response = requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers=headers,
-                json=data,
-            )
+#             response = requests.post(
+#                 "https://api.groq.com/openai/v1/chat/completions",
+#                 headers=headers,
+#                 json=data,
+#             )
 
-            if response.status_code == 200:
-                return response.json()["choices"][0]["message"]["content"]
-            else:
-                return f"Error: {response.status_code} - {response.text}"
-        except Exception as e:
-            return f"An error occurred: {str(e)}"
-
-
-class WelcomeAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(
-            "WelcomeAgent",
-            "a welcome specialist who greets visitors and helps them navigate the portfolio website",
-        )
-
-    def greet(self, visitor_type=None):
-        if visitor_type == "employer":
-            return self.get_response(
-                "Generate a warm welcome message for an employer visiting a programmer's portfolio website. Suggest they check out the Projects and Career sections."
-            )
-        elif visitor_type == "client":
-            return self.get_response(
-                "Generate a warm welcome message for a potential client visiting a programmer's portfolio website. Suggest they check out the Services section."
-            )
-        elif visitor_type == "fellow_programmer":
-            return self.get_response(
-                "Generate a warm welcome message for a fellow programmer visiting a programmer's portfolio website. Suggest they check out the Projects and Research sections."
-            )
-        else:
-            return self.get_response(
-                "Generate a general welcome message for a visitor to a programmer's portfolio website. Ask if they are an employer, client, or fellow programmer."
-            )
-
-    def suggest_section(self, interest):
-        return self.get_response(
-            f"A visitor to my portfolio website has expressed interest in {interest}. Suggest which section(s) of the website they should visit based on this interest."
-        )
+#             if response.status_code == 200:
+#                 return response.json()["choices"][0]["message"]["content"]
+#             else:
+#                 return f"Error: {response.status_code} - {response.text}"
+#         except Exception as e:
+#             return f"An error occurred: {str(e)}"
 
 
-class ProjectAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(
-            "ProjectAgent",
-            "a project specialist who provides detailed information about the programmer's projects",
-        )
+# class WelcomeAgent(BaseAgent):
+#     def __init__(self):
+#         super().__init__(
+#             "WelcomeAgent",
+#             "a welcome specialist who greets visitors and helps them navigate the portfolio website",
+#         )
 
-    def get_project_list(self):
-        return self.get_response(
-            "Generate a list of 3-5 impressive software development projects that could be in a programmer's portfolio. Include a brief description for each."
-        )
+#     def greet(self, visitor_type=None):
+#         if visitor_type == "employer":
+#             return self.get_response(
+#                 "Generate a warm welcome message for an employer visiting a programmer's portfolio website. Suggest they check out the Projects and Career sections."
+#             )
+#         elif visitor_type == "client":
+#             return self.get_response(
+#                 "Generate a warm welcome message for a potential client visiting a programmer's portfolio website. Suggest they check out the Services section."
+#             )
+#         elif visitor_type == "fellow_programmer":
+#             return self.get_response(
+#                 "Generate a warm welcome message for a fellow programmer visiting a programmer's portfolio website. Suggest they check out the Projects and Research sections."
+#             )
+#         else:
+#             return self.get_response(
+#                 "Generate a general welcome message for a visitor to a programmer's portfolio website. Ask if they are an employer, client, or fellow programmer."
+#             )
 
-    def get_project_details(self, project_id):
-        project_prompts = {
-            "project1": "Describe in detail an e-commerce platform project for a programmer's portfolio. Include technologies used, challenges overcome, and key features.",
-            "project2": "Describe in detail a task management application project for a programmer's portfolio. Include technologies used, challenges overcome, and key features.",
-            "project3": "Describe in detail a data visualization dashboard project for a programmer's portfolio. Include technologies used, challenges overcome, and key features.",
-        }
-
-        prompt = project_prompts.get(
-            project_id, f"Describe a project called {project_id} in detail."
-        )
-        return self.get_response(prompt)
-
-    def answer_technical_question(self, project_id, question):
-        return self.get_response(
-            f"Answer this technical question about a project: '{question}'. The project is {project_id}."
-        )
-
-
-class CareerAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(
-            "CareerAgent",
-            "a career specialist who provides information about the programmer's skills and experience",
-        )
-
-    def get_skills_summary(self):
-        return self.get_response(
-            "Generate a comprehensive summary of technical and professional skills for a full-stack developer's portfolio."
-        )
-
-    def get_experience_summary(self):
-        return self.get_response(
-            "Generate a summary of work experience for a full-stack developer with 5+ years of experience."
-        )
-
-    def assess_job_fit(self, job_description):
-        return self.get_response(
-            f"Assess how well a full-stack developer with 5+ years of experience would fit this job description: '{job_description}'. Highlight matching skills and experience."
-        )
+#     def suggest_section(self, interest):
+#         return self.get_response(
+#             f"A visitor to my portfolio website has expressed interest in {interest}. Suggest which section(s) of the website they should visit based on this interest."
+#         )
 
 
-class ClientAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(
-            "ClientAgent",
-            "a client specialist who provides information about services, pricing, and the client engagement process",
-        )
+# class ProjectAgent(BaseAgent):
+#     def __init__(self):
+#         super().__init__(
+#             "ProjectAgent",
+#             "a project specialist who provides detailed information about the programmer's projects",
+#         )
 
-    def get_services_overview(self):
-        return self.get_response(
-            "Generate an overview of services that a freelance full-stack developer might offer to clients."
-        )
+#     def get_project_list(self):
+#         return self.get_response(
+#             "Generate a list of 3-5 impressive software development projects that could be in a programmer's portfolio. Include a brief description for each."
+#         )
 
-    def get_service_details(self, service_type):
-        service_prompts = {
-            "web_development": "Describe web development services offered by a freelance full-stack developer, including technologies, pricing range, and typical timeline.",
-            "mobile_development": "Describe mobile app development services offered by a freelance full-stack developer, including technologies, pricing range, and typical timeline.",
-            "consulting": "Describe technical consulting services offered by a freelance full-stack developer, including areas of expertise, hourly rate range, and engagement model.",
-        }
+#     def get_project_details(self, project_id):
+#         project_prompts = {
+#             "project1": "Describe in detail an e-commerce platform project for a programmer's portfolio. Include technologies used, challenges overcome, and key features.",
+#             "project2": "Describe in detail a task management application project for a programmer's portfolio. Include technologies used, challenges overcome, and key features.",
+#             "project3": "Describe in detail a data visualization dashboard project for a programmer's portfolio. Include technologies used, challenges overcome, and key features.",
+#         }
 
-        prompt = service_prompts.get(
-            service_type, f"Describe {service_type} services in detail."
-        )
-        return self.get_response(prompt)
+#         prompt = project_prompts.get(
+#             project_id, f"Describe a project called {project_id} in detail."
+#         )
+#         return self.get_response(prompt)
 
-    def explain_process(self):
-        return self.get_response(
-            "Explain the client engagement process for a freelance full-stack developer, from initial consultation to project delivery."
-        )
-
-    def generate_proposal(self, project_description):
-        return self.get_response(
-            f"Generate a project proposal for this client request: '{project_description}'. Include estimated timeline, cost range, and approach."
-        )
+#     def answer_technical_question(self, project_id, question):
+#         return self.get_response(
+#             f"Answer this technical question about a project: '{question}'. The project is {project_id}."
+#         )
 
 
-class ResearchAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(
-            "ResearchAgent",
-            "a research specialist who provides information about technologies, trends, and industry news",
-        )
+# class CareerAgent(BaseAgent):
+#     def __init__(self):
+#         super().__init__(
+#             "CareerAgent",
+#             "a career specialist who provides information about the programmer's skills and experience",
+#         )
 
-    def search_web(self, query):
-        return self.get_response(
-            f"Provide information about '{query}' as if you've just searched the web for the latest information. Include key points and insights."
-        )
+#     def get_skills_summary(self):
+#         return self.get_response(
+#             "Generate a comprehensive summary of technical and professional skills for a full-stack developer's portfolio."
+#         )
 
-    def compare_technologies(self, tech1, tech2):
-        return self.get_response(
-            f"Compare {tech1} vs {tech2} in terms of features, performance, use cases, community support, and future prospects."
-        )
+#     def get_experience_summary(self):
+#         return self.get_response(
+#             "Generate a summary of work experience for a full-stack developer with 5+ years of experience."
+#         )
 
-    def get_industry_trends(self):
-        return self.get_response(
-            "Describe current trends in software development and technology that are important for developers to be aware of."
-        )
+#     def assess_job_fit(self, job_description):
+#         return self.get_response(
+#             f"Assess how well a full-stack developer with 5+ years of experience would fit this job description: '{job_description}'. Highlight matching skills and experience."
+#         )
+
+
+# class ClientAgent(BaseAgent):
+#     def __init__(self):
+#         super().__init__(
+#             "ClientAgent",
+#             "a client specialist who provides information about services, pricing, and the client engagement process",
+#         )
+
+#     def get_services_overview(self):
+#         return self.get_response(
+#             "Generate an overview of services that a freelance full-stack developer might offer to clients."
+#         )
+
+#     def get_service_details(self, service_type):
+#         service_prompts = {
+#             "web_development": "Describe web development services offered by a freelance full-stack developer, including technologies, pricing range, and typical timeline.",
+#             "mobile_development": "Describe mobile app development services offered by a freelance full-stack developer, including technologies, pricing range, and typical timeline.",
+#             "consulting": "Describe technical consulting services offered by a freelance full-stack developer, including areas of expertise, hourly rate range, and engagement model.",
+#         }
+
+#         prompt = service_prompts.get(
+#             service_type, f"Describe {service_type} services in detail."
+#         )
+#         return self.get_response(prompt)
+
+#     def explain_process(self):
+#         return self.get_response(
+#             "Explain the client engagement process for a freelance full-stack developer, from initial consultation to project delivery."
+#         )
+
+#     def generate_proposal(self, project_description):
+#         return self.get_response(
+#             f"Generate a project proposal for this client request: '{project_description}'. Include estimated timeline, cost range, and approach."
+#         )
+
+
+# class ResearchAgent(BaseAgent):
+#     def __init__(self):
+#         super().__init__(
+#             "ResearchAgent",
+#             "a research specialist who provides information about technologies, trends, and industry news",
+#         )
+
+#     def search_web(self, query):
+#         return self.get_response(
+#             f"Provide information about '{query}' as if you've just searched the web for the latest information. Include key points and insights."
+#         )
+
+#     def compare_technologies(self, tech1, tech2):
+#         return self.get_response(
+#             f"Compare {tech1} vs {tech2} in terms of features, performance, use cases, community support, and future prospects."
+#         )
+
+#     def get_industry_trends(self):
+#         return self.get_response(
+#             "Describe current trends in software development and technology that are important for developers to be aware of."
+#         )
 
 
 welcome_agent = WelcomeAgent()
