@@ -22,11 +22,13 @@ import requests
 #         return self.agent.print_response(query, stream=stream)
 
 class BaseAgent:
-    def __init__(self, name, description):
+    def __init__(self, name, description, avatar="default_avatar.png"):
         self.name = name
         self.description = description
 
         self.api_key = os.getenv("GROQ_API_KEY")
+
+        self.avatar = avatar
 
     def get_response(self, prompt):
 
