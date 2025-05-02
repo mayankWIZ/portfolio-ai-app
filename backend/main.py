@@ -5,7 +5,7 @@ import json
 import requests
 from flask_cors import CORS
 
-from .agents import (
+from agents import (
     WelcomeAgent,
     ProjectAgent,
     CareerAgent,
