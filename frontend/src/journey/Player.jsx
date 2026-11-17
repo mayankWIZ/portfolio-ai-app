@@ -1,7 +1,7 @@
 // The visitor: a third-person character, its controller (keyboard, joystick, autopilot),
 // collisions, chapter-zone and hotspot detection, and the follow / cinematic camera.
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CHAPTERS, FINALE_INDEX } from "./chapters";
 import { hotspotKey, hotspots, input, moveVector } from "./store";
@@ -94,7 +94,7 @@ function nearestZone(p) {
   return best;
 }
 
-export default function Player({ teleport, autopilot, cinematic, revealed, viewShift, onZone, onNear, onAutoReveal, onAutopilotEnd, onUserInput }) {
+export default function Player({ teleport, autopilot, cinematic, revealed, viewShift, guide, onZone, onNear, onAutoReveal, onAutopilotEnd, onUserInput, onMoved }) {
   const { camera, gl, size } = useThree();
   const body = useRef();
   const parts = useRef({});
@@ -105,7 +105,7 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
     phase: 0,
     yaw: 0,
     pitch: 0.38,
-    dist: 7.5,
+    dist: window.innerWidth < 768 ? 9.5 : 7.5, // phones have no scroll-zoom; start a little wider
     look: new THREE.Vector3(),
     lastDrag: -1e9,
     zone: undefined,
@@ -115,7 +115,7 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
     off: 0,
   });
   const props = useRef({});
-  props.current = { viewShift, size, autopilot, revealed, onZone, onNear, onAutoReveal, onAutopilotEnd, onUserInput };
+  props.current = { onMoved, viewShift, size, autopilot, revealed, onZone, onNear, onAutoReveal, onAutopilotEnd, onUserInput };
 
   // Name lookup for the animated parts.
   useEffect(() => {
@@ -209,6 +209,10 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
     const manual = Math.abs(mv.x) + Math.abs(mv.y) > 0.05;
     if (manual) {
       input.lastUser = now;
+      if (!s.moved) {
+        s.moved = true;
+        P.onMoved?.();
+      }
       s.cine = null;
       if (P.autopilot) P.onUserInput?.();
     }
@@ -372,5 +376,68 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
     else if (camera.view?.enabled) camera.clearViewOffset();
   });
 
-  return <Character body={body} />;
+  return (
+    <>
+      <Character body={body} />
+      <Guide target={guide} />
+    </>
+  );
+}
+
+/** A gold arrow at the visitor's feet and a light beam at the next stop. */
+const _dir = new THREE.Vector3();
+function Guide({ target }) {
+  const arrow = useRef();
+  const beam = useRef();
+  const shape = useMemo(() => {
+    const s = new THREE.Shape();
+    s.moveTo(0, 0.55);
+    s.lineTo(0.38, 0.05);
+    s.lineTo(0.14, 0.05);
+    s.lineTo(0.14, -0.4);
+    s.lineTo(-0.14, -0.4);
+    s.lineTo(-0.14, 0.05);
+    s.lineTo(-0.38, 0.05);
+    s.closePath();
+    return new THREE.ShapeGeometry(s);
+  }, []);
+  useFrame(({ clock }) => {
+    const a = arrow.current;
+    const b = beam.current;
+    if (!a || !b) return;
+    if (target == null) {
+      a.visible = b.visible = false;
+      return;
+    }
+    const st = STATIONS[target];
+    const goal = st.anchor;
+    _dir.set(goal.x - runtime.player.x, 0, goal.z - runtime.player.z);
+    const d = _dir.length();
+    const t = clock.elapsedTime;
+    // Point along the road when far (it curves), straight at the stop when close.
+    if (d > 14 && goal.z < runtime.player.z - 4) {
+      const z = runtime.player.z - 8;
+      _dir.set(roadX(z) - runtime.player.x, 0, z - runtime.player.z);
+    }
+    a.visible = d > ZONE_RADIUS - 2;
+    const yaw = Math.atan2(_dir.x, _dir.z);
+    const off = 1.5 + Math.sin(t * 4) * 0.15;
+    a.position.set(runtime.player.x + Math.sin(yaw) * off, 0.06, runtime.player.z + Math.cos(yaw) * off);
+    a.rotation.set(-Math.PI / 2, 0, 0);
+    a.rotateZ(yaw + Math.PI);
+    b.visible = d > 6;
+    b.position.set(goal.x, 12, goal.z);
+    b.material.opacity = 0.18 + Math.sin(t * 2) * 0.06;
+  });
+  return (
+    <>
+      <mesh ref={arrow} geometry={shape} renderOrder={2}>
+        <meshBasicMaterial color="#fbbf24" transparent opacity={0.95} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh ref={beam}>
+        <cylinderGeometry args={[0.5, 1.4, 24, 20, 1, true]} />
+        <meshBasicMaterial color="#fde68a" transparent opacity={0.2} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </>
+  );
 }

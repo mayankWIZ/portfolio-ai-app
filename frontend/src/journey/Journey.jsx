@@ -3,6 +3,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AgentChat from "../components/AgentChat";
 import { CHAPTERS, FINALE_INDEX } from "./chapters";
+import { Coach, HowTo } from "./Guidance";
 import { ChapterPanel, Finale, Joystick, Legend, Tracker } from "./Hud";
 import { hotspots, input, keyAction } from "./store";
 import Story2D from "./Story2D";
@@ -10,6 +11,15 @@ import Story2D from "./Story2D";
 const JourneyScene = lazy(() => import("./JourneyScene"));
 
 const STORAGE = "journey-progress-v1";
+const COACH_KEY = "journey-coach-v1";
+
+function coachStart() {
+  try {
+    return localStorage.getItem(COACH_KEY) === "done" ? "done" : "move";
+  } catch {
+    return "move";
+  }
+}
 
 function loadProgress() {
   try {
@@ -48,12 +58,26 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
   const [finaleOpen, setFinaleOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [intro, setIntro] = useState(true);
+  const [coach, setCoachState] = useState(coachStart);
+  const coachRef = useRef(coach);
+  coachRef.current = coach;
+  const setCoach = useCallback((step) => {
+    setCoachState(step);
+    if (step === "done") {
+      try {
+        localStorage.setItem(COACH_KEY, "done");
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
   const [ready, setReady] = useState(false);
   const visitedRef = useRef(visited);
   visitedRef.current = visited;
   const autopilotRef = useRef(autopilot);
   autopilotRef.current = autopilot;
   const rootRef = useRef();
+  const zoneRef = useRef(null);
 
   useEffect(() => saveProgress(visited, revealed), [visited, revealed]);
 
@@ -73,7 +97,8 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
     setRevealed((r) => (r.has(key) ? r : new Set(r).add(key)));
     setLastRevealed(key);
     setCollapsed(false);
-  }, []);
+    if (coachRef.current === "inspect") setCoach("ask");
+  }, [setCoach]);
 
   const jump = useCallback((index) => {
     setFinaleOpen(false);
@@ -84,6 +109,7 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
 
   const ask = useCallback((agent, text) => {
     setAutopilot(false);
+    if (coachRef.current !== "done") setCoach("done");
     setChat({ agent, pending: { agent, text, at: Date.now() } });
   }, []);
 
@@ -92,14 +118,18 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
       setZone(i);
       setNear(null);
       if (i == null) return;
-      setCollapsed(false);
+      // Phones: start with just the chapter title so the scene (and its ◆) stays visible.
+      setCollapsed(window.innerWidth < 768);
+      if (coachRef.current === "move" || coachRef.current === "follow") setCoach("inspect");
+      else if (coachRef.current === "ask" && i !== zoneRef.current) setCoach("done");
+      zoneRef.current = i;
       if (!visitedRef.current.has(i)) {
         setVisited((v) => new Set(v).add(i));
         if (!reducedMotion && !autopilotRef.current) setCinematic({ index: i, at: Date.now() });
       }
       if (i === FINALE_INDEX) setTimeout(() => setFinaleOpen(true), autopilotRef.current ? 2500 : 1600);
     },
-    [reducedMotion]
+    [reducedMotion, setCoach]
   );
 
   const restart = useCallback(() => {
@@ -142,6 +172,8 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
       if (e.code === "KeyE" && s.near) {
         e.preventDefault();
         reveal(s.near);
+      } else if (e.key === "?" || (e.code === "Slash" && e.shiftKey)) {
+        setIntro(true);
       } else if (e.code === "KeyG") {
         startTour();
       } else if (/^Digit[0-9]$/.test(e.code) && !e.metaKey && !e.ctrlKey) {
@@ -164,6 +196,8 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
     };
   }, [mode, onExit, reveal, jump, startTour]);
 
+  const firstUnvisited = CHAPTERS.findIndex((_, i) => !visited.has(i));
+  const guideIndex = firstUnvisited === -1 ? FINALE_INDEX : firstUnvisited;
   const nearLabel = near ? hotspots.get(near)?.label : null;
   const nearDone = near ? revealed.has(near) : false;
 
@@ -227,6 +261,8 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
               onAutoReveal: reveal,
               onAutopilotEnd: () => setAutopilot(false),
               onUserInput: () => setAutopilot(false),
+              onMoved: () => coachRef.current === "move" && setCoach("follow"),
+              guide: autopilot || intro ? null : guideIndex,
             }}
           />
         </Suspense>
@@ -244,6 +280,9 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
         <div className="flex items-center gap-2">
           <button className={`journey-btn ${autopilot ? "journey-btn--on" : ""}`} onClick={startTour} aria-pressed={autopilot}>
             {autopilot ? "❚❚ Pause" : "▶"}<span className="ml-1 hidden sm:inline">{autopilot ? "tour" : "Guided tour"}</span><span className="ml-1 sm:hidden">{autopilot ? "" : "Tour"}</span>
+          </button>
+          <button className="journey-btn" onClick={() => setIntro(true)} aria-label="How to explore (controls)" title="How to explore">
+            ?
           </button>
           <button className="journey-btn hidden sm:inline-flex" onClick={() => setFinaleOpen(true)}>
             Summary
@@ -281,15 +320,25 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
         />
       )}
 
-      {zone == null && !intro && !finaleOpen && (
+      {!intro && !finaleOpen && !autopilot && !chat && coach !== "done" && (
+        <Coach step={coach} touch={touch} next={guideIndex} zone={zone} onDismiss={() => setCoach("done")} />
+      )}
+
+      {zone == null && !intro && !finaleOpen && (coach === "done" || autopilot) && (
         <div className="journey-hint" aria-live="polite">
           {(() => {
             const next = CHAPTERS.findIndex((_, i) => !visited.has(i));
-            return next === -1 ? "Every chapter visited. Head to the end of the road for the finale." : `Follow the road. Next: ${next + 1}. ${CHAPTERS[next].short}`;
+            return next === -1 ? "Every stop visited. Follow the arrow to the finale." : `Follow the gold arrow ➜ Next stop ${next + 1}: ${CHAPTERS[next].short}`;
           })()}
         </div>
       )}
 
+      {near && !finaleOpen && touch && (
+        <button className="journey-inspect-btn" onClick={() => reveal(near)} aria-label={`Inspect ${nearLabel}`}>
+          ◆<br />
+          {nearDone ? "Seen" : "Inspect"}
+        </button>
+      )}
       {near && !finaleOpen && (
         <button className="journey-prompt" onClick={() => reveal(near)}>
           {touch ? "Tap to inspect" : <><kbd>E</kbd> Inspect</>}: <strong>{nearLabel}</strong>
@@ -298,22 +347,15 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
       )}
 
       {intro && (
-        <div className="journey-intro">
-          <p className="eyebrow">The Journey</p>
-          <h2 className="mt-2 text-3xl font-semibold text-white">Walk through 7+ years in ten chapters</h2>
-          <p className="mt-3 text-slate-300">
-            Follow the road from university to today. Each station tells one chapter: walk into it, inspect the glowing ◆ objects, and ask the agent standing there anything.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button className="btn-primary" onClick={() => setIntro(false)} autoFocus>
-              Start walking
-            </button>
-            <button className="btn-ghost" onClick={startTour}>
-              ▶ Take the guided tour
-            </button>
-          </div>
-          <p className="mt-4 text-xs text-slate-400">{touch ? "Use the joystick to walk and drag to look around." : "WASD or arrow keys to walk, drag to look, E to inspect, G for the tour."}</p>
-        </div>
+        <HowTo
+          touch={touch}
+          returning={ready && visited.size > 0}
+          onStart={() => setIntro(false)}
+          onTour={() => {
+            setIntro(false);
+            setAutopilot(true);
+          }}
+        />
       )}
 
       <Legend touch={touch} />

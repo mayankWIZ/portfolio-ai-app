@@ -77,6 +77,11 @@ export function ChapterPanel({ index, revealed, lastRevealed, toggles, onToggle,
           </p>
           <h2 className="mt-1 text-2xl font-semibold leading-tight text-white">{c.title}</h2>
           <p className="text-sm text-slate-400">{c.role}</p>
+          {collapsed && (
+            <button className="mt-1 text-xs font-medium text-sky-300" onClick={onCollapse}>
+              Read the chapter · {found}/{c.inspect.length} found ▾
+            </button>
+          )}
         </div>
         <button className="journey-icon-btn md:hidden" onClick={onCollapse} aria-expanded={!collapsed} aria-label={collapsed ? "Expand chapter" : "Collapse chapter"}>
           {collapsed ? "▾" : "▴"}

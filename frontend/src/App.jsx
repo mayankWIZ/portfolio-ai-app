@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AgentChat from "./components/AgentChat";
+import ExploreCard from "./components/ExploreCard";
 import { AGENTS, AGENT_BY_KEY } from "./data/agents";
 import profile from "./data/profile.json";
 import { warmUp } from "./lib/api";
@@ -155,20 +156,10 @@ export default function App() {
                 {label}
               </a>
             ))}
-            <a
-              href="#journey"
-              onClick={(e) => {
-                e.preventDefault();
-                openJourney();
-              }}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-amber-200 transition hover:bg-white/5 hover:text-white"
-            >
-              Journey
-            </a>
           </nav>
           <div className="flex items-center gap-2">
-            <button className="journey-cta !px-3 sm:!px-4" onClick={openJourney}>
-              ▶ <span className="hidden lg:inline">Start the</span> Journey
+            <button className="journey-cta !px-3 sm:!px-4" onClick={openJourney} aria-label="Explore my career in 3D">
+              <span aria-hidden="true">🎮</span> Explore<span className="hidden lg:inline"> in 3D</span>
             </button>
             <button className="btn-primary hidden sm:inline-flex" onClick={() => select(selected || "welcome")}>
               Talk to the agents
@@ -198,15 +189,17 @@ export default function App() {
             </p>
             <h1 className="mt-4 text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl">{profile.name}</h1>
             <p className="mt-4 max-w-lg text-lg text-slate-300">{profile.headline}</p>
-            <div className="pointer-events-auto mt-6 flex flex-wrap gap-3">
-              <button id="journey-cta" className="journey-cta" onClick={openJourney}>▶ Start the journey</button>
+            <div className="pointer-events-auto mt-6">
+              <ExploreCard onOpen={openJourney} />
+            </div>
+            <div className="pointer-events-auto mt-4 flex flex-wrap gap-2 sm:gap-3">
               <button className="btn-primary" onClick={() => select("welcome")}>Meet the agents</button>
               <button className="btn-ghost" onClick={() => select("career")}>Check job fit</button>
-              <a className="btn-ghost" href="#experience">View experience</a>
+              <a className="btn-ghost hidden sm:inline-flex" href="#experience">View experience</a>
             </div>
           </div>
           <p className="hidden text-sm text-slate-500 sm:block">
-            Drag to look around · click a building or agent to chat · {AGENTS.length} agents, one CV, zero LLMs · or walk the whole career in Journey mode
+            Drag to look around · click a building or agent to chat · {AGENTS.length} agents, one CV, zero LLMs
           </p>
         </div>
 
