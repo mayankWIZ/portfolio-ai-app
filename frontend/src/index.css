@@ -229,3 +229,158 @@ html {
   from { opacity: 0; transform: translateY(16px) scale(0.98); }
   to { opacity: 1; transform: none; }
 }
+
+/* ------------------------------------------------------------------ Journey mode */
+@layer components {
+  .journey-root {
+    @apply fixed inset-0 z-50 overflow-hidden bg-slate-950 text-slate-300;
+  }
+  .journey-topbar {
+    @apply pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4;
+    background: linear-gradient(to bottom, rgb(2 6 23 / 0.7), transparent);
+  }
+  .journey-topbar > * {
+    @apply pointer-events-auto;
+  }
+  .journey-btn {
+    @apply inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-lg border border-white/15 bg-slate-950/70 px-3 text-sm font-medium text-white shadow-lg backdrop-blur transition hover:bg-slate-800;
+  }
+  .journey-btn--on {
+    @apply border-sky-300 bg-sky-400/20;
+  }
+  .journey-icon-btn {
+    @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white;
+  }
+  .journey-root :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-sky-300;
+  }
+
+  .journey-tracker {
+    @apply flex min-w-0 items-center overflow-x-auto rounded-xl border border-white/10 bg-slate-950/70 px-2 py-1.5 backdrop-blur;
+    scrollbar-width: none;
+  }
+  .journey-tracker__line {
+    @apply mx-0.5 h-px w-2 bg-white/15 sm:w-3;
+  }
+  .journey-tracker__line--on {
+    @apply bg-emerald-400/70;
+  }
+  .journey-dot {
+    @apply grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/20 bg-slate-900 text-[11px] font-semibold text-slate-300 transition hover:border-white/60;
+  }
+  .journey-dot--done {
+    @apply border-transparent text-slate-950;
+    background: var(--accent);
+  }
+  .journey-dot--here {
+    box-shadow: 0 0 0 3px #020617, 0 0 0 5px var(--accent);
+  }
+
+  .journey-panel {
+    @apply absolute inset-x-2 top-16 z-20 max-h-[46svh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/85 p-4 shadow-2xl backdrop-blur-xl md:inset-x-auto md:left-4 md:top-20 md:max-h-[calc(100svh-7.5rem)] md:w-[390px] md:p-5;
+    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.7), 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+    animation: slide-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .journey-panel--collapsed {
+    @apply max-h-none;
+  }
+  .journey-metric {
+    @apply rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2;
+  }
+  .journey-find {
+    @apply rounded-lg border border-dashed border-white/15 px-3 py-2 transition;
+  }
+  .journey-find--open {
+    @apply border-solid;
+    border-color: color-mix(in srgb, var(--accent, #38bdf8) 40%, transparent);
+    background: color-mix(in srgb, var(--accent, #38bdf8) 8%, transparent);
+  }
+  .journey-find--new {
+    animation: find-flash 1.4s ease-out;
+  }
+  .journey-toggle {
+    @apply flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2;
+  }
+  .journey-toggle input {
+    @apply sr-only;
+  }
+  .journey-toggle__track {
+    @apply relative h-5 w-9 shrink-0 rounded-full bg-slate-700 transition;
+  }
+  .journey-toggle__track::after {
+    content: "";
+    @apply absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition;
+  }
+  .journey-toggle input:checked + .journey-toggle__track {
+    background: var(--accent);
+  }
+  .journey-toggle input:checked + .journey-toggle__track::after {
+    transform: translateX(16px);
+  }
+  .journey-toggle input:focus-visible + .journey-toggle__track {
+    @apply outline outline-2 outline-offset-2 outline-sky-300;
+  }
+  .journey-caret {
+    @apply ml-0.5 inline-block h-4 w-1.5 translate-y-0.5 bg-slate-300;
+    animation: blink 1s infinite;
+  }
+
+  .journey-legend {
+    @apply absolute bottom-3 right-3 z-20 max-w-[260px] rounded-xl border border-white/10 bg-slate-950/75 p-2.5 text-slate-300 backdrop-blur;
+  }
+  .journey-legend dt {
+    @apply whitespace-nowrap text-slate-200;
+  }
+  .journey-legend dd {
+    @apply text-slate-400;
+  }
+  .journey-legend__toggle {
+    @apply text-xs font-semibold uppercase tracking-wider text-slate-300 hover:text-white;
+  }
+  .journey-root kbd {
+    @apply rounded border border-white/25 bg-white/10 px-1 py-px font-sans text-[11px] text-white;
+  }
+
+  .journey-joystick {
+    @apply absolute bottom-6 left-6 z-20 grid h-32 w-32 touch-none select-none place-items-center rounded-full border border-white/20 bg-slate-950/40 backdrop-blur;
+  }
+  .journey-joystick__knob {
+    @apply h-14 w-14 rounded-full border border-white/40 bg-white/25 shadow-lg;
+  }
+
+  .journey-prompt {
+    @apply absolute bottom-44 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/20 bg-slate-950/85 px-4 py-2 text-sm text-white shadow-xl backdrop-blur md:bottom-24;
+  }
+  .journey-hint {
+    @apply pointer-events-none absolute bottom-44 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-950/70 px-4 py-1.5 text-xs text-slate-200 backdrop-blur md:bottom-6;
+  }
+  .journey-intro {
+    @apply absolute left-1/2 top-1/2 z-30 w-[min(92vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-slate-950/85 p-6 shadow-2xl backdrop-blur-xl;
+  }
+  .journey-finale {
+    @apply absolute inset-0 z-40 overflow-y-auto bg-slate-950/70 px-3 py-16 backdrop-blur-md sm:py-20;
+  }
+  .journey-finale__card {
+    @apply mx-auto max-w-3xl rounded-2xl border border-white/10 bg-slate-950/90 p-5 shadow-2xl sm:p-8;
+    animation: slide-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .journey-chat {
+    @apply absolute inset-x-2 bottom-2 top-16 z-40 sm:inset-x-auto sm:right-4 sm:top-16 sm:w-[410px] lg:bottom-4;
+    animation: slide-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .journey-story {
+    @apply absolute inset-0 overflow-y-auto;
+  }
+  .journey-cta {
+    @apply inline-flex items-center gap-2 whitespace-nowrap rounded-lg bg-gradient-to-r from-amber-300 via-pink-300 to-sky-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-pink-500/20 transition hover:brightness-110;
+  }
+}
+
+@keyframes find-flash {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent, #38bdf8) 70%, transparent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-panel, .journey-finale__card, .journey-chat, .journey-find--new { animation: none; }
+}

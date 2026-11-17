@@ -444,11 +444,12 @@ function CameraRig({ selected, controls }) {
 
 /* ------------------------------------------------------------------ scene */
 
-export default function Town3D({ selected, onSelect }) {
+export default function Town3D({ selected, onSelect, paused = false }) {
   const [hovered, setHovered] = useState(null);
   const controls = useRef();
   return (
     <Canvas
+      frameloop={paused ? "never" : "always"}
       shadows
       dpr={[1, 1.75]}
       camera={{ position: HOME.pos.toArray(), fov: 42, near: 0.1, far: 200 }}

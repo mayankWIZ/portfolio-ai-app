@@ -172,3 +172,6 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# The frontend API client lives in frontend/src/lib (not a Python lib dir)
+!frontend/src/lib/
