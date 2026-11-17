@@ -124,7 +124,10 @@ export default function App() {
 
   const select = useCallback((key) => {
     setSelected(key);
-    if (key) setChatOpen(true);
+    if (key) {
+      setChatOpen(true);
+      document.getElementById("town")?.scrollIntoView({ behavior: "smooth" });
+    }
   }, []);
 
   const askAgent = useCallback((agent, text) => {
