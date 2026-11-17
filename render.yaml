@@ -1,0 +1,15 @@
+# Render Blueprint: the PyBot-powered portfolio API on the free plan.
+services:
+  - type: web
+    name: mayank-portfolio-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: RATE_LIMIT_PER_MIN
+        value: "40"
