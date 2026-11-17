@@ -3,79 +3,486 @@
 @tailwind utilities;
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: #020617;
 }
 
 @layer components {
-  .chat-container {
-    @apply w-full h-96 flex flex-col;
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-sky-300;
+  }
+  .pulse {
+    @apply relative inline-block h-2 w-2 rounded-full bg-emerald-400;
+    box-shadow: 0 0 0 0 rgb(52 211 153 / 0.6);
+    animation: pulse 2s infinite;
+  }
+  .btn-primary {
+    @apply inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-sky-500/10 transition hover:bg-sky-100;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white backdrop-blur transition hover:bg-white/10;
+  }
+  .card {
+    @apply rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6 transition hover:border-white/15;
+  }
+  .tag {
+    @apply inline-block rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs text-slate-300;
+  }
+  .tag--bright {
+    @apply border-sky-400/20 bg-sky-400/10 text-sky-100;
+  }
+  .tick {
+    @apply shrink-0 text-sky-400;
+  }
+  .ask {
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium text-white transition;
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .ask:hover {
+    background: color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  .ask__dot {
+    @apply h-1.5 w-1.5 rounded-full;
+    background: var(--accent);
+  }
+  .hero-scrim {
+    background: linear-gradient(100deg, rgb(2 6 23 / 0.88) 0%, rgb(2 6 23 / 0.55) 45%, transparent 80%);
+  }
+  .hero-fade {
+    background: linear-gradient(to bottom, transparent, #020617);
   }
 
-  .chat-messages {
-    @apply flex-1 overflow-y-auto p-4;
+  /* timeline */
+  .timeline {
+    @apply relative space-y-10 border-l border-white/10 pl-8;
+  }
+  .timeline__item {
+    @apply relative;
+  }
+  .timeline__item::before {
+    content: "";
+    @apply absolute -left-[37px] top-2 h-3 w-3 rounded-full border-2 border-sky-400 bg-slate-950;
   }
 
-  .message {
-    @apply flex mb-4;
+  /* 3D labels */
+  .town-label {
+    @apply flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/15 bg-slate-950/80 px-2.5 py-1 text-[11px] text-white shadow-lg backdrop-blur transition;
+  }
+  .town-label--hot {
+    border-color: var(--accent);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+  .town-label__dot {
+    @apply h-1.5 w-1.5 rounded-full;
+    background: var(--accent);
+  }
+  .town-label__role {
+    @apply text-slate-400;
   }
 
-  .user-message {
-    @apply justify-end;
+  .agent-card {
+    @apply flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:bg-white/[0.06];
+  }
+  .agent-card--on {
+    border-color: var(--accent);
+  }
+  .agent-card__avatar {
+    @apply grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg font-bold text-slate-950;
+    background: var(--accent);
   }
 
-  .agent-message {
-    @apply justify-start;
+  /* chat */
+  .chat-dock {
+    @apply absolute inset-x-3 bottom-3 top-20 z-30 sm:inset-x-auto sm:right-6 sm:top-24 sm:w-[420px] lg:bottom-8;
+    animation: slide-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .chat {
+    @apply flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/85 shadow-2xl backdrop-blur-xl;
+    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.7), 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  .chat__header {
+    @apply flex items-center gap-3 border-b border-white/10 px-4 py-3;
+  }
+  .chat__avatar {
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-full text-base font-bold text-slate-950;
+    background: var(--accent);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .chat__role {
+    @apply rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+  .chat__close {
+    @apply grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white;
+  }
+  .chat__tabs {
+    @apply flex gap-1 overflow-x-auto border-b border-white/5 px-3 py-2;
+    scrollbar-width: none;
+  }
+  .chat__tab {
+    @apply rounded-full px-2.5 py-1 text-xs text-slate-400 transition hover:text-white;
+  }
+  .chat__tab--on {
+    @apply text-slate-950;
+    background: var(--accent);
+  }
+  .chat__log {
+    @apply flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4;
+  }
+  .bubble {
+    @apply max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed;
+  }
+  .bubble--agent {
+    @apply self-start rounded-tl-sm border border-white/5 bg-white/[0.06] text-slate-200;
+  }
+  .bubble--user {
+    @apply self-end rounded-tr-sm text-slate-950;
+    background: var(--accent);
+  }
+  .bubble--error {
+    @apply border-rose-400/30 bg-rose-500/10 text-rose-100;
+  }
+  .bubble__meta {
+    @apply mt-1.5 text-[10px] uppercase tracking-wide text-slate-500;
+  }
+  .chat__chips {
+    @apply flex gap-1.5 overflow-x-auto px-4 pb-2;
+    scrollbar-width: none;
+  }
+  .chip {
+    @apply shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300 transition hover:border-white/25 hover:text-white disabled:opacity-40;
+  }
+  .chat__form {
+    @apply flex items-end gap-2 border-t border-white/10 p-3;
+  }
+  .chat__form textarea {
+    @apply max-h-40 min-h-[40px] flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-white/30;
+  }
+  .chat__send {
+    @apply h-10 rounded-xl px-4 text-sm font-semibold text-slate-950 transition disabled:opacity-40;
+    background: var(--accent);
+  }
+  .chat__foot {
+    @apply px-4 pb-2 text-center text-[10px] text-slate-500;
+  }
+  .typing {
+    @apply inline-flex gap-1;
+  }
+  .typing i {
+    @apply block h-1.5 w-1.5 rounded-full bg-slate-400;
+    animation: blink 1.2s infinite;
+  }
+  .typing i:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .typing i:nth-child(3) {
+    animation-delay: 0.4s;
   }
 
-  .message-avatar {
-    @apply flex-shrink-0 mr-2;
+  /* markdown inside bubbles */
+  .prose-chat > * + * {
+    @apply mt-2;
+  }
+  .prose-chat ul {
+    @apply list-disc space-y-1 pl-4;
+  }
+  .prose-chat ol {
+    @apply list-decimal space-y-1 pl-4;
+  }
+  .prose-chat h3 {
+    @apply text-base font-semibold text-white;
+  }
+  .prose-chat strong {
+    @apply font-semibold text-white;
+  }
+  .bubble--user .prose-chat strong {
+    @apply text-slate-950;
+  }
+  .prose-chat a {
+    @apply underline underline-offset-2;
+    color: var(--accent);
+  }
+  .prose-chat code {
+    @apply rounded bg-black/30 px-1 py-0.5 text-xs;
+  }
+}
+
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.25; }
+  40% { opacity: 1; }
+}
+@keyframes pulse {
+  70% { box-shadow: 0 0 0 8px rgb(52 211 153 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(52 211 153 / 0); }
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ------------------------------------------------------------------ Journey mode */
+@layer components {
+  .journey-root {
+    @apply fixed inset-0 z-50 overflow-hidden bg-slate-950 text-slate-300;
+  }
+  .journey-topbar {
+    @apply pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4;
+    background: linear-gradient(to bottom, rgb(2 6 23 / 0.7), transparent);
+  }
+  .journey-topbar > * {
+    @apply pointer-events-auto;
+  }
+  .journey-btn {
+    @apply inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-lg border border-white/15 bg-slate-950/70 px-3 text-sm font-medium text-white shadow-lg backdrop-blur transition hover:bg-slate-800;
+  }
+  .journey-btn--on {
+    @apply border-sky-300 bg-sky-400/20;
+  }
+  .journey-icon-btn {
+    @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white;
+  }
+  .journey-root :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-sky-300;
   }
 
-  .avatar-placeholder {
-    @apply w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold;
+  .journey-tracker {
+    @apply flex min-w-0 max-w-full items-center overflow-x-auto rounded-xl border border-white/10 bg-slate-950/70 px-2 py-1.5 backdrop-blur;
+    scrollbar-width: none;
+  }
+  .journey-tracker__line {
+    @apply mx-0.5 h-px w-2 bg-white/15 sm:w-3;
+  }
+  .journey-tracker__line--on {
+    @apply bg-emerald-400/70;
+  }
+  .journey-dot {
+    @apply grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/20 bg-slate-900 text-[11px] font-semibold text-slate-300 transition hover:border-white/60;
+  }
+  .journey-dot--done {
+    @apply border-transparent text-slate-950;
+    background: var(--accent);
+  }
+  .journey-dot--here {
+    box-shadow: 0 0 0 3px #020617, 0 0 0 5px var(--accent);
   }
 
-  .message-content {
-    @apply p-3 rounded-lg max-w-xs sm:max-w-sm md:max-w-md;
+  .journey-panel {
+    @apply absolute inset-x-2 top-[6.25rem] z-20 max-h-[46svh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/85 p-4 shadow-2xl backdrop-blur-xl md:inset-x-auto md:left-4 md:top-20 md:max-h-[calc(100svh-7.5rem)] md:w-[390px] md:p-5;
+    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.7), 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+    animation: slide-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .journey-panel--collapsed {
+    @apply max-h-none;
+  }
+  .journey-metric {
+    @apply rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2;
+  }
+  .journey-find {
+    @apply rounded-lg border border-dashed border-white/15 px-3 py-2 transition;
+  }
+  .journey-find--open {
+    @apply border-solid;
+    border-color: color-mix(in srgb, var(--accent, #38bdf8) 40%, transparent);
+    background: color-mix(in srgb, var(--accent, #38bdf8) 8%, transparent);
+  }
+  .journey-find--new {
+    animation: find-flash 1.4s ease-out;
+  }
+  .journey-toggle {
+    @apply flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2;
+  }
+  .journey-toggle input {
+    @apply sr-only;
+  }
+  .journey-toggle__track {
+    @apply relative h-5 w-9 shrink-0 rounded-full bg-slate-700 transition;
+  }
+  .journey-toggle__track::after {
+    content: "";
+    @apply absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition;
+  }
+  .journey-toggle input:checked + .journey-toggle__track {
+    background: var(--accent);
+  }
+  .journey-toggle input:checked + .journey-toggle__track::after {
+    transform: translateX(16px);
+  }
+  .journey-toggle input:focus-visible + .journey-toggle__track {
+    @apply outline outline-2 outline-offset-2 outline-sky-300;
+  }
+  .journey-caret {
+    @apply ml-0.5 inline-block h-4 w-1.5 translate-y-0.5 bg-slate-300;
+    animation: blink 1s infinite;
   }
 
-  .user-message .message-content {
-    @apply bg-blue-500 text-white;
+  .journey-legend {
+    @apply absolute bottom-3 right-3 z-20 max-w-[260px] rounded-xl border border-white/10 bg-slate-950/75 p-2.5 text-slate-300 backdrop-blur;
+  }
+  .journey-legend dt {
+    @apply whitespace-nowrap text-slate-200;
+  }
+  .journey-legend dd {
+    @apply text-slate-400;
+  }
+  .journey-legend__toggle {
+    @apply text-xs font-semibold uppercase tracking-wider text-slate-300 hover:text-white;
+  }
+  .journey-root kbd {
+    @apply rounded border border-white/25 bg-white/10 px-1 py-px font-sans text-[11px] text-white;
   }
 
-  .agent-message .message-content {
-    @apply bg-gray-200 text-gray-800;
+  .journey-joystick {
+    @apply absolute bottom-6 left-6 z-20 grid h-32 w-32 touch-none select-none place-items-center rounded-full border border-white/20 bg-slate-950/40 backdrop-blur;
+  }
+  .journey-joystick__knob {
+    @apply h-14 w-14 rounded-full border border-white/40 bg-white/25 shadow-lg;
   }
 
-  .chat-input-container {
-    @apply p-4 border-t border-gray-200;
+  .journey-prompt {
+    @apply absolute bottom-44 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/20 bg-slate-950/85 px-4 py-2 text-sm text-white shadow-xl backdrop-blur md:bottom-24;
+  }
+  .journey-hint {
+    @apply pointer-events-none absolute bottom-44 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-950/70 px-4 py-1.5 text-xs text-slate-200 backdrop-blur md:bottom-6;
+  }
+  .journey-intro {
+    @apply absolute left-1/2 top-1/2 z-30 w-[min(92vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-slate-950/85 p-6 shadow-2xl backdrop-blur-xl;
+  }
+  .journey-finale {
+    @apply absolute inset-0 z-40 overflow-y-auto bg-slate-950/70 px-3 py-16 backdrop-blur-md sm:py-20;
+  }
+  .journey-finale__card {
+    @apply mx-auto max-w-3xl rounded-2xl border border-white/10 bg-slate-950/90 p-5 shadow-2xl sm:p-8;
+    animation: slide-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .journey-chat {
+    @apply absolute inset-x-2 bottom-2 top-16 z-40 sm:inset-x-auto sm:right-4 sm:top-16 sm:w-[410px] lg:bottom-4;
+    animation: slide-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .journey-story {
+    @apply absolute inset-0 overflow-y-auto;
+  }
+  .journey-cta {
+    @apply inline-flex items-center gap-2 whitespace-nowrap rounded-lg bg-gradient-to-r from-amber-300 via-pink-300 to-sky-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-pink-500/20 transition hover:brightness-110;
+  }
+}
+
+@keyframes find-flash {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent, #38bdf8) 70%, transparent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-panel, .journey-finale__card, .journey-chat, .journey-find--new { animation: none; }
+}
+
+/* ------------------------------------------------------------------ explore entry & guidance */
+@layer components {
+  .keycap {
+    @apply inline-grid h-6 min-w-[1.5rem] place-items-center rounded-md border border-white/25 border-b-[3px] bg-white/10 px-1.5 font-sans text-[11px] font-semibold text-white;
+  }
+  .keycap--wide {
+    @apply min-w-[3rem];
+  }
+  .explore-card {
+    @apply w-full max-w-md rounded-2xl border border-white/10 bg-slate-950/60 p-2 shadow-2xl backdrop-blur-md;
+  }
+  .explore-card__btn {
+    @apply flex w-full items-center gap-3 rounded-xl bg-gradient-to-r from-amber-300 via-pink-300 to-sky-300 px-4 py-3 text-slate-950 shadow-lg shadow-pink-500/20 transition hover:brightness-110 active:scale-[0.99];
+    animation: cta-glow 2.8s ease-in-out infinite;
+  }
+  .explore-card__icon {
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-950/15 text-xl;
+  }
+  .explore-card__how {
+    @apply mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-2 pb-1 text-xs text-slate-300;
+  }
+  .explore-card__how li {
+    @apply flex items-center gap-1;
+  }
+  .explore-card__glyph {
+    @apply inline-grid h-6 w-6 place-items-center rounded-md border border-white/20 bg-white/10 text-[12px] text-white;
   }
 
-  .chat-input-group {
-    @apply flex;
+  /* how-to-play card inside the journey */
+  .howto {
+    @apply absolute left-1/2 top-[6.25rem] z-30 max-h-[calc(100svh-7rem)] w-[min(94vw,640px)] -translate-x-1/2 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/90 p-4 shadow-2xl backdrop-blur-xl sm:top-1/2 sm:max-h-[88svh] sm:-translate-y-1/2 sm:p-7;
+  }
+  .howto__grid {
+    @apply mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:gap-3;
+  }
+  .howto__step {
+    @apply flex flex-col gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-2.5 sm:flex-row sm:gap-3 sm:p-3;
+  }
+  .howto__visual {
+    @apply grid h-10 w-12 shrink-0 place-items-center rounded-lg bg-slate-900 text-white sm:h-14 sm:w-16;
+  }
+  .wasd {
+    @apply grid grid-cols-3 gap-0.5;
   }
 
-  .chat-input {
-    @apply flex-1 border border-gray-300 rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500;
+  /* progressive coach tip */
+  .coach {
+    @apply pointer-events-auto absolute bottom-[11.5rem] left-1/2 z-20 flex w-[min(92vw,560px)] -translate-x-1/2 items-center gap-3 rounded-2xl border border-amber-300/40 bg-slate-950/85 px-4 py-3 text-sm text-slate-100 shadow-2xl backdrop-blur md:bottom-6;
+    animation: coach-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+  .coach__step {
+    @apply grid h-7 w-7 shrink-0 place-items-center rounded-full bg-amber-300 text-xs font-bold text-slate-950;
+  }
+  .journey-inspect-btn {
+    @apply absolute bottom-[9.5rem] right-4 z-20 grid h-20 w-20 place-items-center rounded-full border-2 border-amber-200 bg-amber-300/90 text-center text-xs font-bold leading-tight text-slate-950 shadow-2xl;
+    animation: cta-glow 1.6s ease-in-out infinite;
+  }
+}
 
-  .chat-send-button {
-    @apply bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500;
-  }
+@keyframes cta-glow {
+  0%, 100% { box-shadow: 0 10px 30px -10px rgb(244 114 182 / 0.45); }
+  50% { box-shadow: 0 10px 40px -6px rgb(251 191 36 / 0.7); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .explore-card__btn, .journey-inspect-btn, .coach { animation: none; }
+}
 
-  .loading-dots:after {
-    @apply content-['...'] animate-pulse;
+/* ------------------------------------------------------------------ mini-games */
+@layer components {
+  .journey-chip {
+    @apply inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg sm:h-9 border border-white/15 bg-slate-950/70 px-2.5 text-sm font-semibold tabular-nums text-white backdrop-blur;
   }
+  .journey-finale .journey-chip {
+    @apply h-7 text-xs;
+  }
+  .journey-gamecard {
+    @apply flex items-center gap-3 rounded-xl border border-amber-300/30 bg-amber-300/10 px-3 py-2.5;
+  }
+  .game-hud {
+    @apply absolute left-1/2 top-[6.25rem] z-30 w-[min(92vw,380px)] sm:top-16 -translate-x-1/2 rounded-2xl border border-cyan-300/40 bg-slate-950/90 p-3 shadow-2xl backdrop-blur;
+  }
+  .journey-toast {
+    @apply pointer-events-none absolute left-1/2 top-[10rem] z-30 sm:top-[7.5rem] -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-300 px-4 py-1.5 text-sm font-semibold text-slate-950 shadow-xl;
+    animation: toast-pop 1.6s ease-out forwards;
+  }
+  .journey-jump-btn {
+    @apply absolute bottom-16 right-4 z-20 grid h-16 w-16 touch-none select-none place-items-center rounded-full border border-white/30 bg-white/15 text-xl font-bold leading-none text-white shadow-xl backdrop-blur active:bg-white/30;
+  }
+}
+@keyframes toast-pop {
+  0% { opacity: 0; transform: translate(-50%, 8px) scale(0.9); }
+  15% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+  25% { transform: translate(-50%, 0) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -10px); }
+}
 
-  .project-image-placeholder {
-    @apply h-48 bg-gray-300 flex items-center justify-center text-gray-600 font-semibold;
-  }
-
-  .agent-avatar-placeholder {
-    @apply w-16 h-16 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold mx-auto;
-  }
+@keyframes coach-in {
+  from { opacity: 0; transform: translate(-50%, 16px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }

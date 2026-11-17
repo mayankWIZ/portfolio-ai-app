@@ -1,11 +1,6 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import './index.css';
-import './style.css';
-import App from './App.jsx';
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import App from "./App.jsx";
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+// No <StrictMode>: its dev-only double mount races drei's <Html> label roots in the 3D town.
+createRoot(document.getElementById("root")).render(<App />);

@@ -1,0 +1,349 @@
+{
+  "name": "Mayank Ranghadiya",
+  "title": "Head of Engineering · Founding Platform Engineer",
+  "headline": "Platform engineer with 7+ years building distributed systems, AI governance infrastructure and high-traffic Python platforms.",
+  "location": "Gujarat, India",
+  "years_experience": "7+",
+  "summary": "Motivated Platform Engineer with 7+ years of experience in Python, Celery, REST APIs and React. Optimized system performance (30% less processing time on key projects) and delivered 0→1 scalable solutions for high-traffic applications. Built distributed systems processing 300K+ events/min for 1M+ users while orchestrating 7K+ jobs/day. Mentors engineers and drives system reliability across cloud and on-prem environments. Currently Head of Engineering at CognitivTrust, building an AI governance platform.",
+  "contact": {
+    "email": "mayankranghadia54154@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/mayank-ranghadiya",
+    "github": "https://github.com/mayankWIZ"
+  },
+  "metrics": [
+    {
+      "value": "300K+",
+      "label": "events / minute processed"
+    },
+    {
+      "value": "1M+",
+      "label": "users supported"
+    },
+    {
+      "value": "7K+",
+      "label": "jobs orchestrated / day"
+    },
+    {
+      "value": "7+",
+      "label": "years engineering"
+    },
+    {
+      "value": "25+",
+      "label": "integration plugins shipped"
+    },
+    {
+      "value": "30%",
+      "label": "faster processing via benchmarking"
+    }
+  ],
+  "skills": {
+    "Languages": [
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "Bash"
+    ],
+    "Backend & Distributed": [
+      "FastAPI",
+      "Django",
+      "Flask",
+      "Celery",
+      "asyncio",
+      "gRPC",
+      "REST APIs",
+      "WebSockets",
+      "Microservices"
+    ],
+    "AI & Agents": [
+      "AI Agents",
+      "RAG",
+      "LangChain",
+      "MCP",
+      "OpenAI",
+      "AWS Bedrock",
+      "Vertex AI",
+      "Groq",
+      "TensorFlow",
+      "Prompt Engineering"
+    ],
+    "Data & Messaging": [
+      "PostgreSQL",
+      "MongoDB",
+      "MySQL",
+      "Redis",
+      "RabbitMQ"
+    ],
+    "Cloud & DevOps": [
+      "Docker",
+      "Kubernetes",
+      "AWS",
+      "GCP",
+      "Azure",
+      "vSphere",
+      "Hyper-V",
+      "CI/CD",
+      "Observability"
+    ],
+    "Frontend": [
+      "React",
+      "WebRTC",
+      "Tailwind CSS"
+    ],
+    "AI-assisted Engineering": [
+      "Cursor",
+      "Windsurf",
+      "Lovable",
+      "Firebase Studio"
+    ],
+    "Leadership": [
+      "System Design",
+      "Architecture",
+      "Mentoring",
+      "Team & Project Management",
+      "Agile",
+      "Testing (pytest)",
+      "Debugging"
+    ]
+  },
+  "experience": [
+    {
+      "company": "CognitivTrust",
+      "role": "Head of Engineering · Founding Platform Engineer",
+      "period": "Mar 2026 – Present",
+      "summary": "Founding engineer shaping product and architecture for an AI governance platform.",
+      "highlights": [
+        "Work closely with the founder on product direction, system architecture and key speed/scale/maintainability trade-offs.",
+        "Own end-to-end delivery of core platform capabilities, from idea to production rollout.",
+        "Built the foundation of an AI governance platform that lets organizations control and monitor AI-assisted development workflows.",
+        "Building a zero-configuration AI governance gateway that intercepts and routes IDE-generated AI requests for real-time policy enforcement.",
+        "Developed a context layer that augments AI interactions with organizational documents (policies, release rules) for context-aware code generation.",
+        "Established engineering workflows, standards and release processes as the team scaled.",
+        "Improved observability, monitoring and debugging to close critical visibility and reliability gaps.",
+        "Key technical point of contact for stakeholders, translating business needs into scalable designs."
+      ],
+      "tech": [
+        "Python",
+        "AI Gateways",
+        "LLM Policy Enforcement",
+        "RAG / Context Layer",
+        "Observability"
+      ]
+    },
+    {
+      "company": "Crest Data",
+      "role": "Senior Software Development Engineer",
+      "period": "Jul 2023 – Mar 2026",
+      "summary": "Built and scaled enterprise distributed systems, including Netskope Cloud Exchange.",
+      "highlights": [
+        "Built and scaled distributed systems (Python, Celery, RabbitMQ, Redis) processing 300K+ events/min for 1M+ users and 7K+ jobs/day.",
+        "Led 7+ modules from 0→1, owning architecture, design decisions and production rollout.",
+        "Designed and implemented 25+ plugins (MySQL, MSSQL, SMB file shares, SFTP, OracleDB and more).",
+        "Key contributor to Netskope Cloud Exchange, optimizing throughput and latency for top global organizations.",
+        "Improved system performance by 25% across AWS, GCP, Azure and on-prem; cut processing time 30% through regular benchmarking.",
+        "Led deployments across on-prem, vSphere, Hyper-V, AWS, GCP and Azure.",
+        "Mentored 4 engineers (intern to senior) in a team of 7–10.",
+        "Resolved escalated customer issues beyond documentation; used AI tools for POCs, scripts and test data."
+      ],
+      "tech": [
+        "Python",
+        "Celery",
+        "RabbitMQ",
+        "Redis",
+        "MongoDB",
+        "Docker",
+        "AWS",
+        "GCP",
+        "Azure"
+      ]
+    },
+    {
+      "company": "Sourcewiz",
+      "role": "Full-Stack Developer",
+      "period": "Mar 2022 – Jul 2023",
+      "summary": "Full-stack delivery for B2B export clients such as Zara, Jaipur Rugs and Surya Intl.",
+      "highlights": [
+        "Built a Celery reporting scheduler that cut manual reporting time by 40%, with Slack alerts for downtime and failures.",
+        "Integrated the WhatsApp Cloud API for real-time client reporting, alerts and promotions.",
+        "Built end-to-end APIs for client communications, reducing developer configuration time.",
+        "Took on full-stack responsibilities with ReactJS, shipping features across the stack.",
+        "Worked with 200+ clients in a fast-paced agile environment and supported CI/CD pipelines."
+      ],
+      "tech": [
+        "Python",
+        "Django",
+        "Celery",
+        "React",
+        "WhatsApp Cloud API",
+        "CI/CD"
+      ]
+    },
+    {
+      "company": "HHAeXchange",
+      "role": "Software Development Engineer",
+      "period": "Nov 2020 – Feb 2022",
+      "summary": "Patient Module team for a home-care platform used by 90%+ of US counties.",
+      "highlights": [
+        "Improved performance and reliability of the Patient Module, which handles a large share of platform transactions.",
+        "Shipped new features and fixed critical bugs to keep the platform up for thousands of daily users.",
+        "Contributed to a Selenium automation framework that reduced testing time by 35%."
+      ],
+      "tech": [
+        "Python",
+        "Selenium",
+        "SQL"
+      ]
+    },
+    {
+      "company": "Self-Employed",
+      "role": "Python Backend Engineer (Freelance)",
+      "period": "Jan 2020 – Jan 2022",
+      "summary": "Independent backend delivery and consulting.",
+      "highlights": [
+        "Delivered 10+ projects with Django, FastAPI and Celery, on time and on budget.",
+        "Improved client site response times by 30% through refactoring and database optimization.",
+        "Consulted on scalable backend and API design and mentored developers."
+      ],
+      "tech": [
+        "Django",
+        "FastAPI",
+        "Celery",
+        "PostgreSQL"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "portfolio-agents",
+      "name": "Agent Town Portfolio",
+      "summary": "This site: a 3D town of AI agents that answer questions about Mayank's work and assess fit against a job description.",
+      "details": "Each agent (concierge, career, projects, services, research) is grounded in a structured copy of my CV. Replies come from an LLM on Groq when available, then a deterministic CV knowledge base, then PyBot, a rule-based chatbot in plain Python, so the chat keeps working without any API key.",
+      "tech": [
+        "Python",
+        "Flask",
+        "Groq",
+        "PyBot",
+        "React",
+        "Three.js",
+        "React Three Fiber"
+      ],
+      "github": "https://github.com/mayankWIZ/portfolio-ai-app"
+    },
+    {
+      "id": "ai-governance-gateway",
+      "name": "AI Governance Gateway (CognitivTrust)",
+      "summary": "Zero-config gateway that intercepts IDE-generated AI requests for real-time policy enforcement, with a context layer built from org documents.",
+      "details": "Routes AI traffic from developer IDEs through a policy engine, augments prompts with organizational policies and release rules, and gives teams monitoring and control over AI-assisted development. Proprietary, so details are high level.",
+      "tech": [
+        "Python",
+        "LLM Gateways",
+        "RAG",
+        "Policy Engines",
+        "Observability"
+      ]
+    },
+    {
+      "id": "netskope-ce",
+      "name": "Netskope Cloud Exchange (Crest Data)",
+      "summary": "Enterprise cloud integration platform used by top global organizations; Mayank optimized its infrastructure and integration tools for throughput and latency.",
+      "details": "Part of his Crest Data work, where he built Celery/RabbitMQ/Redis systems processing 300K+ events/min and 7K+ jobs/day and shipped 25+ connector plugins (MySQL, MSSQL, SMB, SFTP, OracleDB), deployed across cloud, VMs and on-prem.",
+      "tech": [
+        "Python",
+        "Celery",
+        "RabbitMQ",
+        "Redis",
+        "MongoDB",
+        "Docker"
+      ]
+    },
+    {
+      "id": "voice-rag",
+      "name": "Voice RAG",
+      "summary": "Voice chatbot that transcribes submitted audio and answers questions from its content.",
+      "details": "MVP RAG pipeline: Whisper for speech-to-text, LangChain for retrieval and answering, Streamlit UI.",
+      "tech": [
+        "Python",
+        "Whisper",
+        "LangChain",
+        "Streamlit"
+      ],
+      "github": "https://github.com/mayankWIZ/voice-rag"
+    },
+    {
+      "id": "db-ai-chat",
+      "name": "Chat with your Data",
+      "summary": "Talk to your database in plain English; serverless apart from one Node server, using Groq-hosted models.",
+      "details": "Text-to-query RAG for non-technical users who previously needed custom BI tools. Built with Node.js, React and Groq.",
+      "tech": [
+        "Node.js",
+        "React",
+        "Groq",
+        "RAG"
+      ],
+      "github": "https://github.com/mayankWIZ/db-ai-chat"
+    },
+    {
+      "id": "whatsapp-integration",
+      "name": "WhatsApp Cloud API Integration",
+      "summary": "Real-time client reporting and alerts over the WhatsApp Cloud API from a Python backend.",
+      "details": "Used for critical client alerts, system notifications and promotions at Sourcewiz.",
+      "tech": [
+        "Python",
+        "WhatsApp Cloud API",
+        "Celery"
+      ],
+      "github": "https://github.com/mayankWIZ/reporting-pipeline"
+    }
+  ],
+  "services": [
+    {
+      "name": "Platform & distributed systems",
+      "description": "Design and build of high-throughput Python platforms: Celery/RabbitMQ/Redis pipelines, microservices, gRPC/REST APIs."
+    },
+    {
+      "name": "AI agents & RAG",
+      "description": "Production LLM features: agents, RAG over company data, MCP tools, guardrails and governance."
+    },
+    {
+      "name": "Performance & reliability",
+      "description": "Benchmarking, profiling, observability and scaling work that cuts latency and cost."
+    },
+    {
+      "name": "Technical leadership",
+      "description": "Architecture reviews, engineering process, release workflows and mentoring for early-stage teams."
+    }
+  ],
+  "research_interests": [
+    "AI governance and policy enforcement for AI-assisted development",
+    "Context engineering and RAG for enterprise knowledge",
+    "Agentic systems and the Model Context Protocol (MCP)",
+    "High-throughput event processing and task orchestration",
+    "Rule-based vs. model-based conversational systems (PyBot)"
+  ],
+  "education": [
+    {
+      "school": "Dharmsinh Desai University, Nadiad",
+      "degree": "B.Tech, Computer Engineering (CGPA 7.0)",
+      "period": "2017 – 2021"
+    },
+    {
+      "school": "Sheth C.M. High School, Gandhinagar",
+      "degree": "12th Grade (87.63%)",
+      "period": "2015 – 2017"
+    },
+    {
+      "school": "D.A. Vidya Mandir, Dhandhuka",
+      "degree": "10th Grade (85.15%)",
+      "period": "2015"
+    }
+  ],
+  "certifications": [
+    "Prompt Design and Engineering, Google",
+    "Advanced Python Programming",
+    "Recognized for leading and delivering high-impact projects at Crest Data"
+  ],
+  "languages": [
+    "English",
+    "Hindi",
+    "Gujarati"
+  ]
+}
