@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Html, OrbitControls, RoundedBox } from "@react-three/drei";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ContactShadows, OrbitControls, RoundedBox } from "@react-three/drei";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { AGENTS } from "../data/agents";
 
@@ -233,7 +233,7 @@ const _v = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 const _e = new THREE.Euler(0, 0, 0, "YXZ");
 
-function Avatar({ agent, hot, active, onSelect, onHover }) {
+function Avatar({ agent, hot, active, onSelect, onHover, registerAnchor }) {
   const group = useRef();
   const phase = useMemo(() => Math.random() * Math.PI * 2, []);
   useFrame(({ clock, camera }) => {
@@ -281,22 +281,12 @@ function Avatar({ agent, hot, active, onSelect, onHover }) {
         <ringGeometry args={[0.35, 0.45, 32]} />
         <meshStandardMaterial color={agent.color} emissive={agent.color} emissiveIntensity={hot || active ? 2 : 0.6} toneMapped={false} transparent opacity={0.9} />
       </mesh>
-      <Html position={[0, 1.65, 0]} center distanceFactor={11} zIndexRange={[20, 0]}>
-        <button
-          onClick={() => onSelect(agent.key)}
-          className={`town-label ${hot || active ? "town-label--hot" : ""}`}
-          style={{ "--accent": agent.color }}
-        >
-          <span className="town-label__dot" />
-          <strong>{agent.name}</strong>
-          <span className="town-label__role">{agent.building}</span>
-        </button>
-      </Html>
+      <group position={[0, 1.65, 0]} ref={(o) => registerAnchor(agent.key, o)} />
     </group>
   );
 }
 
-function Plot({ agent, hot, active, onSelect, onHover }) {
+function Plot({ agent, hot, active, onSelect, onHover, registerAnchor }) {
   const Building = BUILDINGS[agent.key];
   const [x, , z] = agent.position;
   // Every building faces the plaza; its agent stands at the door, between building and plaza.
@@ -319,7 +309,7 @@ function Plot({ agent, hot, active, onSelect, onHover }) {
         <Building color={agent.color} hot={hot || active} />
       </group>
       <group position={isCenter ? [0, 0, 1.6] : [0, 0, 2.2]}>
-        <Avatar agent={agent} hot={hot} active={active} onSelect={onSelect} onHover={onHover} />
+        <Avatar agent={agent} hot={hot} active={active} onSelect={onSelect} onHover={onHover} registerAnchor={registerAnchor} />
       </group>
     </group>
   );
@@ -412,6 +402,7 @@ function Lamps() {
 
 /* ------------------------------------------------------------------ camera */
 
+const UP = new THREE.Vector3(0, 1, 0);
 const HOME = { pos: new THREE.Vector3(0, 13, 19), look: new THREE.Vector3(0, 1.5, 0) };
 
 function CameraRig({ selected, controls }) {
@@ -421,11 +412,16 @@ function CameraRig({ selected, controls }) {
     const agent = AGENTS.find((a) => a.key === selected);
     if (!agent) return HOME;
     const p = new THREE.Vector3(...agent.position);
-    const look = p.clone().add(new THREE.Vector3(0, 2, 0));
-    if (!p.lengthSq()) return { pos: new THREE.Vector3(0, 4.5, 9), look };
-    // Stand on the plaza side of the building, where its front door and agent face.
-    const towardPlaza = p.clone().normalize().multiplyScalar(-7);
-    return { pos: p.clone().add(towardPlaza).add(new THREE.Vector3(0, 4.5, 0)), look };
+    const tall = agent.key === "career" || agent.key === "research";
+    const look = p.clone().add(new THREE.Vector3(0, tall ? 3 : 2, 0));
+    const pos = p.lengthSq()
+      ? // Approach from the plaza side, angled ~35° so the Town Hall dome stays out of the sightline.
+        p.clone().add(p.clone().negate().setY(0).normalize().applyAxisAngle(UP, 0.6).multiplyScalar(tall ? 13 : 8.5)).add(new THREE.Vector3(0, tall ? 8 : 5, 0))
+      : new THREE.Vector3(3.5, 5, 10);
+    // Aim a little to the building's right so it sits in the left half, clear of the chat panel.
+    const forward = look.clone().sub(pos).setY(0).normalize();
+    const right = new THREE.Vector3().crossVectors(forward, UP).normalize();
+    return { pos, look: look.clone().setY(tall ? 3.2 : 1.6).add(right.multiplyScalar(tall ? 3.2 : 2.2)) };
   }, [selected]);
 
   useEffect(() => {
@@ -442,12 +438,46 @@ function CameraRig({ selected, controls }) {
   return null;
 }
 
+/* ------------------------------------------------------------------ labels */
+
+// Labels are plain DOM buttons over the canvas, moved every frame to their 3D anchors.
+// (drei <Html> mounts a React root per label; under React 19 one of them could be lost.)
+function LabelProjector({ anchors, labels }) {
+  const { camera, size } = useThree();
+  useFrame(() => {
+    for (const key of Object.keys(labels.current)) {
+      const el = labels.current[key];
+      const anchor = anchors.current[key];
+      if (!el || !anchor) continue;
+      anchor.getWorldPosition(_v);
+      const dist = camera.position.distanceTo(_v);
+      _v.project(camera);
+      const hidden = _v.z > 1 || Math.abs(_v.x) > 1.2 || Math.abs(_v.y) > 1.2;
+      el.style.opacity = hidden ? "0" : "1";
+      el.style.pointerEvents = hidden ? "none" : "auto";
+      const x = ((_v.x + 1) / 2) * size.width;
+      const y = ((1 - _v.y) / 2) * size.height;
+      const scale = THREE.MathUtils.clamp(14 / dist, 0.7, 1.35);
+      el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${scale})`;
+      el.style.zIndex = String(1000 - Math.round(dist * 10));
+    }
+  });
+  return null;
+}
+
 /* ------------------------------------------------------------------ scene */
 
 export default function Town3D({ selected, onSelect }) {
   const [hovered, setHovered] = useState(null);
   const controls = useRef();
+  const anchors = useRef({});
+  const labels = useRef({});
+  const registerAnchor = useCallback((key, obj) => {
+    if (obj) anchors.current[key] = obj;
+    else delete anchors.current[key];
+  }, []);
   return (
+    <div className="relative isolate h-full w-full overflow-hidden">
     <Canvas
       shadows
       dpr={[1, 1.75]}
@@ -482,6 +512,7 @@ export default function Town3D({ selected, onSelect }) {
           active={selected === agent.key}
           onSelect={onSelect}
           onHover={setHovered}
+          registerAnchor={registerAnchor}
         />
       ))}
       <ContactShadows position={[0, 0.03, 0]} opacity={0.35} scale={40} blur={2.5} far={8} />
@@ -498,6 +529,29 @@ export default function Town3D({ selected, onSelect }) {
         target={HOME.look.toArray()}
       />
       <CameraRig selected={selected} controls={controls} />
+      <LabelProjector anchors={anchors} labels={labels} />
     </Canvas>
+    <div className="pointer-events-none absolute inset-0">
+      {AGENTS.map((agent) => (
+        <button
+          key={agent.key}
+          ref={(el) => {
+            if (el) labels.current[agent.key] = el;
+            else delete labels.current[agent.key];
+          }}
+          onClick={() => onSelect(agent.key)}
+          onMouseEnter={() => setHovered(agent.key)}
+          onMouseLeave={() => setHovered(null)}
+          className={`town-label absolute left-0 top-0 opacity-0 ${hovered === agent.key || selected === agent.key ? "town-label--hot" : ""}`}
+          style={{ "--accent": agent.color, transitionProperty: "border-color, box-shadow" }}
+          aria-label={`Talk to ${agent.name}, ${agent.role} in the ${agent.building}`}
+        >
+          <span className="town-label__dot" />
+          <strong>{agent.name}</strong>
+          <span className="town-label__role">{agent.building}</span>
+        </button>
+      ))}
+    </div>
+    </div>
   );
 }
