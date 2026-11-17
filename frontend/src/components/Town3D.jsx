@@ -3,6 +3,7 @@ import { ContactShadows, OrbitControls, RoundedBox } from "@react-three/drei";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { AGENTS } from "../data/agents";
+import Humanoid, { OUTFITS, animateIdle, humanoidParts } from "./Humanoid";
 
 /* ------------------------------------------------------------------ building pieces */
 
@@ -233,56 +234,63 @@ const _v = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 const _e = new THREE.Euler(0, 0, 0, "YXZ");
 
+const noHit = () => null;
+
 function Avatar({ agent, hot, active, onSelect, onHover, registerAnchor }) {
   const group = useRef();
+  const body = useRef();
+  const parts = useRef({});
+  const waveAmt = useRef(0);
+  useEffect(() => {
+    parts.current = humanoidParts(body.current);
+    // Only the static hit cylinder takes pointer events.
+    body.current?.traverse((o) => (o.raycast = noHit));
+  }, []);
   const phase = useMemo(() => Math.random() * Math.PI * 2, []);
   useFrame(({ clock, camera }) => {
     const g = group.current;
     if (!g) return;
     const t = clock.elapsedTime + phase;
-    g.position.y = 0.05 + Math.abs(Math.sin(t * (hot ? 4 : 1.6))) * (hot ? 0.18 : 0.06);
+    g.position.y = hot ? Math.abs(Math.sin(t * 2.6)) * 0.06 : 0;
+    waveAmt.current = THREE.MathUtils.lerp(waveAmt.current, hot || active ? 1 : 0, 0.1);
+    animateIdle(parts.current, t, { seed: phase, wave: waveAmt.current, talk: active ? 1 : 0 });
     // Turn to face the camera (in the parent's frame), along the shortest arc.
     g.getWorldPosition(_v);
     const worldYaw = Math.atan2(camera.position.x - _v.x, camera.position.z - _v.z);
     const parentYaw = g.parent ? _e.setFromQuaternion(g.parent.getWorldQuaternion(_q)).y : 0;
     const delta = THREE.MathUtils.euclideanModulo(worldYaw - parentYaw - g.rotation.y + Math.PI, Math.PI * 2) - Math.PI;
     g.rotation.y += delta * 0.08;
-    const s = THREE.MathUtils.lerp(g.scale.x, hot || active ? 1.25 : 1, 0.15);
+    const s = THREE.MathUtils.lerp(g.scale.x, hot || active ? 1.15 : 1, 0.12);
     g.scale.setScalar(s);
   });
   return (
-    <group
-      ref={group}
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect(agent.key);
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        onHover(agent.key);
-      }}
-      onPointerOut={() => onHover(null)}
-    >
-      <mesh position={[0, 0.45, 0]} castShadow>
-        <capsuleGeometry args={[0.22, 0.45, 6, 16]} />
-        <meshStandardMaterial color={agent.color} roughness={0.35} />
+    <>
+      {/* Static, invisible hit area: hover is tested against this, not the bouncing/scaling body,
+          so the avatar can't slip out from under the cursor and flicker. */}
+      <mesh
+        position={[0, 0.75, 0]}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(agent.key);
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          onHover(agent.key);
+        }}
+        onPointerOut={() => onHover(null)}
+      >
+        <cylinderGeometry args={[0.55, 0.55, 1.5, 12]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      <mesh position={[0, 1.08, 0]} castShadow>
-        <sphereGeometry args={[0.2, 24, 16]} />
-        <meshStandardMaterial color="#fde4cf" roughness={0.6} />
-      </mesh>
-      {[-0.07, 0.07].map((x) => (
-        <mesh key={x} position={[x, 1.11, 0.18]}>
-          <sphereGeometry args={[0.03, 8, 8]} />
-          <meshStandardMaterial color="#0f172a" />
-        </mesh>
-      ))}
-      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+    <group ref={group}>
+      <Humanoid ref={body} outfit={OUTFITS[agent.key]} scale={0.75} />
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={noHit}>
         <ringGeometry args={[0.35, 0.45, 32]} />
         <meshStandardMaterial color={agent.color} emissive={agent.color} emissiveIntensity={hot || active ? 2 : 0.6} toneMapped={false} transparent opacity={0.9} />
       </mesh>
       <group position={[0, 1.65, 0]} ref={(o) => registerAnchor(agent.key, o)} />
     </group>
+    </>
   );
 }
 
@@ -467,8 +475,16 @@ function LabelProjector({ anchors, labels }) {
 
 /* ------------------------------------------------------------------ scene */
 
-export default function Town3D({ selected, onSelect }) {
-  const [hovered, setHovered] = useState(null);
+export default function Town3D({ selected, onSelect, paused = false }) {
+  const [hovered, setHoveredNow] = useState(null);
+  // Clearing hover waits a moment, so moving between an agent, its building and its label doesn't flicker.
+  const hoverTimer = useRef();
+  const setHovered = useCallback((key) => {
+    clearTimeout(hoverTimer.current);
+    if (key) setHoveredNow(key);
+    else hoverTimer.current = setTimeout(() => setHoveredNow(null), 120);
+  }, []);
+  useEffect(() => () => clearTimeout(hoverTimer.current), []);
   const controls = useRef();
   const anchors = useRef({});
   const labels = useRef({});
@@ -479,6 +495,7 @@ export default function Town3D({ selected, onSelect }) {
   return (
     <div className="relative isolate h-full w-full overflow-hidden">
     <Canvas
+      frameloop={paused ? "never" : "always"}
       shadows
       dpr={[1, 1.75]}
       camera={{ position: HOME.pos.toArray(), fov: 42, near: 0.1, far: 200 }}

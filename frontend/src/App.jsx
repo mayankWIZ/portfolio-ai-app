@@ -1,10 +1,12 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AgentChat from "./components/AgentChat";
+import ExploreCard from "./components/ExploreCard";
 import { AGENTS, AGENT_BY_KEY } from "./data/agents";
 import profile from "./data/profile.json";
 import { warmUp } from "./lib/api";
 
 const Town3D = lazy(() => import("./components/Town3D"));
+const Journey = lazy(() => import("./journey/Journey"));
 
 function hasWebGL() {
   try {
@@ -79,6 +81,38 @@ export default function App() {
   const [pending, setPending] = useState(null);
   const webgl = useMemo(hasWebGL, []);
   const reducedMotion = useMemo(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches, []);
+  const [journey, setJourney] = useState(() => window.location.hash === "#journey");
+  const journeyPushed = useRef(false);
+
+  // The journey is a full-screen overlay addressed by #journey, so Back closes it and the link is shareable.
+  useEffect(() => {
+    const sync = () => setJourney(window.location.hash === "#journey");
+    window.addEventListener("popstate", sync);
+    window.addEventListener("hashchange", sync);
+    return () => {
+      window.removeEventListener("popstate", sync);
+      window.removeEventListener("hashchange", sync);
+    };
+  }, []);
+
+  const openJourney = useCallback(() => {
+    if (window.location.hash !== "#journey") {
+      window.history.pushState(null, "", "#journey");
+      journeyPushed.current = true;
+    }
+    setJourney(true);
+  }, []);
+
+  const closeJourney = useCallback(() => {
+    setJourney(false);
+    if (journeyPushed.current) {
+      journeyPushed.current = false;
+      window.history.back();
+    } else {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    setTimeout(() => document.getElementById("journey-cta")?.focus({ preventScroll: true }), 50);
+  }, []);
 
   useEffect(() => {
     warmUp();
@@ -123,9 +157,14 @@ export default function App() {
               </a>
             ))}
           </nav>
-          <button className="btn-primary" onClick={() => select(selected || "welcome")}>
-            Talk to the agents
-          </button>
+          <div className="flex items-center gap-2">
+            <button className="journey-cta !px-3 sm:!px-4" onClick={openJourney} aria-label="Explore my career in 3D">
+              <span aria-hidden="true">🎮</span> Explore<span className="hidden lg:inline"> in 3D</span>
+            </button>
+            <button className="btn-primary hidden whitespace-nowrap lg:inline-flex" onClick={() => select(selected || "welcome")}>
+              Talk to the agents
+            </button>
+          </div>
         </div>
       </header>
 
@@ -134,7 +173,7 @@ export default function App() {
         <div className="absolute inset-0 top-16">
           {webgl && !reducedMotion ? (
             <Suspense fallback={<div className="grid h-full place-items-center text-slate-500">Building the town…</div>}>
-              <Town3D selected={selected} onSelect={select} />
+              <Town3D selected={selected} onSelect={select} paused={journey} />
             </Suspense>
           ) : (
             <AgentCards selected={selected} onSelect={select} />
@@ -150,10 +189,13 @@ export default function App() {
             </p>
             <h1 className="mt-4 text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl">{profile.name}</h1>
             <p className="mt-4 max-w-lg text-lg text-slate-300">{profile.headline}</p>
-            <div className="pointer-events-auto mt-6 flex flex-wrap gap-3">
+            <div className="pointer-events-auto mt-6">
+              <ExploreCard onOpen={openJourney} />
+            </div>
+            <div className="pointer-events-auto mt-4 flex flex-wrap gap-2 sm:gap-3">
               <button className="btn-primary" onClick={() => select("welcome")}>Meet the agents</button>
               <button className="btn-ghost" onClick={() => select("career")}>Check job fit</button>
-              <a className="btn-ghost" href="#experience">View experience</a>
+              <a className="btn-ghost hidden sm:inline-flex" href="#experience">View experience</a>
             </div>
           </div>
           <p className="hidden text-sm text-slate-500 sm:block">
@@ -326,6 +368,12 @@ export default function App() {
           </div>
         </div>
       </Section>
+
+      {journey && (
+        <Suspense fallback={<div className="fixed inset-0 z-50 grid place-items-center bg-slate-950 text-slate-400">Loading the journey…</div>}>
+          <Journey webgl={webgl} reducedMotion={reducedMotion} onExit={closeJourney} />
+        </Suspense>
+      )}
 
       <footer className="border-t border-white/5 py-8 text-center text-sm text-slate-500">
         © {new Date().getFullYear()} {profile.name} · Agents powered by{" "}
