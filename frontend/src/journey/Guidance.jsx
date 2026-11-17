@@ -45,7 +45,7 @@ export function HowTo({ touch, onStart, onTour, returning }) {
         {touch ? (
           <>
             <Step visual={<span className="text-2xl">◎</span>} title="Walk">
-              Joystick, bottom-left. Push far to run.
+              Joystick, bottom-left. Push far to run, tap ⤒ to jump.
             </Step>
             <Step visual={<span className="text-2xl">☝</span>} title="Look around">
               Drag anywhere with one finger.
@@ -54,7 +54,7 @@ export function HowTo({ touch, onStart, onTour, returning }) {
         ) : (
           <>
             <Step visual={<Wasd />} title="Walk">
-              <Key>W</Key> <Key>A</Key> <Key>S</Key> <Key>D</Key> or arrow keys. Hold <Key wide>Shift</Key> to run.
+              <Key>W</Key> <Key>A</Key> <Key>S</Key> <Key>D</Key> or arrows. <Key wide>Shift</Key> run, <Key wide>Space</Key> jump.
             </Step>
             <Step visual={<span className="text-2xl">🖱</span>} title="Look around">
               Drag with the mouse (or <Key>Z</Key> <Key>X</Key>). Scroll to zoom.
@@ -74,7 +74,10 @@ export function HowTo({ touch, onStart, onTour, returning }) {
           )}
         </Step>
       </ul>
-      <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+      <p className="mt-3 rounded-lg bg-amber-300/10 px-3 py-2 text-xs text-amber-100 sm:text-sm">
+        🎮 Grab the gold <strong>✦ commits</strong> along the road (jump for the high ones), and play the mini-games at <strong>Crest Data</strong> and <strong>CognitivTrust</strong>.
+      </p>
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
         <button className="btn-primary justify-center !py-2.5" onClick={onStart} ref={startRef}>
           {returning ? "Back to exploring" : "Start exploring"}
         </button>

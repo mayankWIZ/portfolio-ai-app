@@ -82,3 +82,36 @@ export function seeded(seed) {
   let s = seed;
   return () => (s = (s * 16807) % 2147483647) / 2147483647;
 }
+
+/* ------------------------------------------------------------------ mini-game layouts */
+
+/** "Commits" to collect along the road; every fourth floats high and needs a jump. */
+export const COMMITS = (() => {
+  const r = seeded(91);
+  const out = [];
+  let i = 0;
+  for (let z = START_Z - 6; z > END_Z + 10; z -= 8.5, i++) {
+    if (STATIONS.some((s) => Math.abs(s.anchor.z - z) < 6)) continue;
+    const high = i % 4 === 3;
+    out.push({ id: `c${i}`, x: roadX(z) + (r() - 0.5) * 2.6, y: high ? 2.35 : 0.95, z, high });
+  }
+  return out;
+})();
+
+/** Event Rush targets around a station: scattered on its side of the road, some up high. */
+export function rushTargets(stationIndex, count = 15, seed = Date.now() % 100000) {
+  const st = STATIONS[stationIndex];
+  const r = seeded(seed + 7);
+  const out = [];
+  let guard = 0;
+  while (out.length < count && guard++ < 500) {
+    const a = r() * Math.PI * 2;
+    const rad = 3 + r() * 9;
+    const x = st.anchor.x + st.side * 4 + Math.cos(a) * rad;
+    const z = st.anchor.z + Math.sin(a) * rad;
+    if (COLLIDER_LIST.some((c) => Math.hypot(c.x - x, c.z - z) < c.r + 1)) continue;
+    if (out.some((o) => Math.hypot(o.x - x, o.z - z) < 1.6)) continue;
+    out.push({ id: `r${out.length}`, x, y: out.length % 3 === 2 ? 2.2 : 0.95, z });
+  }
+  return out;
+}

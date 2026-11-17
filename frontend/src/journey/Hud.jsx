@@ -60,7 +60,7 @@ function AskAgent({ agentKey, question, onAsk }) {
 
 /* ------------------------------------------------------------------ chapter panel */
 
-export function ChapterPanel({ index, revealed, lastRevealed, toggles, onToggle, onReveal, onAsk, onJump, reduced, collapsed, onCollapse }) {
+export function ChapterPanel({ index, revealed, lastRevealed, toggles, onToggle, onReveal, onAsk, onJump, onPlay, best, reduced, collapsed, onCollapse }) {
   const c = CHAPTERS[index];
   const agent = AGENT_BY_KEY[c.agent];
   const found = c.inspect.filter((_, i) => revealed.has(hotspotKey(index, i))).length;
@@ -113,6 +113,27 @@ export function ChapterPanel({ index, revealed, lastRevealed, toggles, onToggle,
                 <span className="block text-xs text-slate-400">{toggles[c.id] ? c.toggle.on : c.toggle.off}</span>
               </span>
             </label>
+          )}
+
+          {c.game && (
+            <div className="journey-gamecard mt-4">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">🎮 Mini-game</p>
+                <p className="text-sm font-medium text-white">{c.game === "rush" ? "Event Rush: route 15 events in 30 s" : "Be the policy gate: allow or block 8 AI requests"}</p>
+                <p className="text-xs text-slate-400">
+                  {c.game === "rush"
+                    ? best?.rush != null
+                      ? `Best: ${best.rush.toFixed(1)}s`
+                      : "Run and jump to grab the glowing packets."
+                    : best?.policy != null
+                      ? `Best: ${best.policy}/8`
+                      : "Decide like the governance gateway would."}
+                </p>
+              </div>
+              <button className="btn-primary shrink-0 !px-3 !py-1.5 text-xs" onClick={() => onPlay(c.game)}>
+                Play
+              </button>
+            </div>
           )}
 
           {c.inspect.length > 0 && (
@@ -222,8 +243,8 @@ export function Tracker({ visited, zone, onJump }) {
 
 /* ------------------------------------------------------------------ legend */
 
-export function Legend({ touch }) {
-  const [open, setOpen] = useState(() => !touch);
+export function Legend({ touch, defaultOpen = !touch }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="journey-legend">
       <button className="journey-legend__toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
@@ -319,7 +340,7 @@ export function Joystick() {
 
 /* ------------------------------------------------------------------ finale */
 
-export function Finale({ visited, revealed, onJump, onClose, onAsk, onRestart, onExit }) {
+export function Finale({ games, visited, revealed, onJump, onClose, onAsk, onRestart, onExit }) {
   const missing = CHAPTERS.map((c, i) => [c, i]).filter(([, i]) => !visited.has(i) && i !== FINALE_INDEX);
   const totalFinds = CHAPTERS.reduce((n, c) => n + c.inspect.length, 0);
   const closeRef = useRef();
@@ -350,6 +371,14 @@ export function Finale({ visited, revealed, onJump, onClose, onAsk, onRestart, o
             </div>
           ))}
         </div>
+
+        {games && (
+          <div className="mt-4 flex flex-wrap gap-2 text-xs">
+            <span className="journey-chip">✦ Commits {games.commits}/{games.totalCommits}</span>
+            <span className="journey-chip">⚡ Event Rush {games.rushBest != null ? `${games.rushBest.toFixed(1)}s` : "not played"}</span>
+            <span className="journey-chip">⛔ Policy gate {games.policyBest != null ? `${games.policyBest}/8` : "not played"}</span>
+          </div>
+        )}
 
         {missing.length > 0 && (
           <div className="mt-6 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4">

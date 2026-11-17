@@ -3,72 +3,33 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import Humanoid, { OUTFITS, humanoidParts } from "../components/Humanoid";
 import { CHAPTERS, FINALE_INDEX } from "./chapters";
-import { hotspotKey, hotspots, input, moveVector } from "./store";
+import { hotspotKey, hotspots, input, moveVector, pickups } from "./store";
 import { COLLIDER_LIST, END_Z, START_Z, STATIONS, ZONE_RADIUS, progressAt, roadX, runtime } from "./world";
 
-const WALK = 5.2;
-const RUN = 9.5;
-const AUTO = 6.5;
+// Calm, easy-to-follow speeds (world units per second).
+const WALK = 4;
+const RUN = 7.5;
+const AUTO = 5;
+// Camera orbit: radians per dragged pixel. Touch screens are smaller, so a little more per pixel.
+// Physics tuning: how quickly you reach top speed, how fast you stop, and the jump arc (~1.3 m high).
+const ACCEL = 9;
+const FRICTION = 12;
+const AIR_ACCEL = 2.5;
+const GRAVITY = 24;
+const JUMP_V = 8;
+const DRAG_MOUSE = 0.0024;
+const DRAG_TOUCH = 0.0038;
 const REACH = 3.4;
 
 const damp = (k, dt) => 1 - Math.exp(-k * dt);
 const angleDelta = (a, b) => THREE.MathUtils.euclideanModulo(b - a + Math.PI, Math.PI * 2) - Math.PI;
 
 function Character({ body }) {
-  // Body parts are addressed by name from the controller for the walk cycle.
   return (
     <group ref={body}>
-      <group name="hips" position={[0, 0.95, 0]}>
-        <mesh name="torso" position={[0, 0.42, 0]} castShadow>
-          <capsuleGeometry args={[0.27, 0.42, 6, 16]} />
-          <meshStandardMaterial color="#2563eb" roughness={0.75} />
-        </mesh>
-        <mesh position={[0, 0.5, -0.27]} castShadow>
-          <boxGeometry args={[0.38, 0.45, 0.16]} />
-          <meshStandardMaterial color="#1f2937" roughness={0.8} />
-        </mesh>
-        <group name="head" position={[0, 1.02, 0]}>
-          <mesh castShadow>
-            <sphereGeometry args={[0.21, 24, 18]} />
-            <meshStandardMaterial color="#c68a5e" roughness={0.6} />
-          </mesh>
-          <mesh position={[0, 0.07, -0.02]} scale={[1.05, 0.75, 1.05]} castShadow>
-            <sphereGeometry args={[0.21, 20, 12, 0, Math.PI * 2, 0, Math.PI / 1.8]} />
-            <meshStandardMaterial color="#111827" roughness={0.9} />
-          </mesh>
-          {[-0.075, 0.075].map((x) => (
-            <mesh key={x} position={[x, 0.01, 0.19]}>
-              <sphereGeometry args={[0.028, 8, 8]} />
-              <meshStandardMaterial color="#0b0f19" />
-            </mesh>
-          ))}
-        </group>
-        {[-1, 1].map((s) => (
-          <group key={s} name={s < 0 ? "armL" : "armR"} position={[s * 0.36, 0.72, 0]}>
-            <mesh position={[0, -0.3, 0]} castShadow>
-              <capsuleGeometry args={[0.075, 0.42, 4, 10]} />
-              <meshStandardMaterial color="#2563eb" roughness={0.75} />
-            </mesh>
-            <mesh position={[0, -0.62, 0]} castShadow>
-              <sphereGeometry args={[0.075, 10, 8]} />
-              <meshStandardMaterial color="#c68a5e" roughness={0.6} />
-            </mesh>
-          </group>
-        ))}
-        {[-1, 1].map((s) => (
-          <group key={s} name={s < 0 ? "legL" : "legR"} position={[s * 0.13, 0.02, 0]}>
-            <mesh position={[0, -0.42, 0]} castShadow>
-              <capsuleGeometry args={[0.095, 0.62, 4, 10]} />
-              <meshStandardMaterial color="#1e293b" roughness={0.85} />
-            </mesh>
-            <mesh position={[0, -0.88, 0.06]} castShadow>
-              <boxGeometry args={[0.17, 0.12, 0.3]} />
-              <meshStandardMaterial color="#f8fafc" roughness={0.6} />
-            </mesh>
-          </group>
-        ))}
-      </group>
+      <Humanoid outfit={OUTFITS.player} />
       {/* soft blob shadow helps grounding when real shadows are off */}
       <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.45, 24]} />
@@ -94,7 +55,7 @@ function nearestZone(p) {
   return best;
 }
 
-export default function Player({ teleport, autopilot, cinematic, revealed, viewShift, guide, onZone, onNear, onAutoReveal, onAutopilotEnd, onUserInput, onMoved }) {
+export default function Player({ teleport, autopilot, cinematic, revealed, viewShift, guide, onZone, onNear, onAutoReveal, onAutopilotEnd, onUserInput, onMoved, onPickup }) {
   const { camera, gl, size } = useThree();
   const body = useRef();
   const parts = useRef({});
@@ -113,15 +74,22 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
     cine: null,
     ap: { target: null, dwell: 0, nextReveal: 0 },
     off: 0,
+    dragYaw: 0,
+    dragPitch: 0,
+    vel: new THREE.Vector3(),
+    y: 0,
+    vy: 0,
+    land: 0,
+    lastGround: 0,
+    jumpBuffer: 0,
+    jumpWas: false,
   });
   const props = useRef({});
-  props.current = { onMoved, viewShift, size, autopilot, revealed, onZone, onNear, onAutoReveal, onAutopilotEnd, onUserInput };
+  props.current = { onPickup, onMoved, viewShift, size, autopilot, revealed, onZone, onNear, onAutoReveal, onAutopilotEnd, onUserInput };
 
   // Name lookup for the animated parts.
   useEffect(() => {
-    const p = {};
-    body.current.traverse((o) => o.name && (p[o.name] = o));
-    parts.current = p;
+    parts.current = humanoidParts(body.current);
     st.current.look.copy(st.current.pos).add(new THREE.Vector3(0, 1.3, 0));
     camera.position.set(st.current.pos.x, 4.5, st.current.pos.z + 8);
   }, [camera]);
@@ -141,8 +109,10 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
       drag.y = e.clientY;
       if (Math.abs(dx) + Math.abs(dy) < 1) return;
       const s = st.current;
-      s.yaw -= dx * 0.006;
-      s.pitch = THREE.MathUtils.clamp(s.pitch + dy * 0.004, 0.05, 1.2);
+      // Queue the rotation; the frame loop eases it in so the view glides instead of snapping.
+      const k = e.pointerType === "touch" ? DRAG_TOUCH : DRAG_MOUSE;
+      s.dragYaw -= dx * k;
+      s.dragPitch += dy * k * 0.7;
       s.lastDrag = performance.now();
       s.cine = null;
     };
@@ -151,7 +121,7 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
     };
     const wheel = (e) => {
       e.preventDefault();
-      st.current.dist = THREE.MathUtils.clamp(st.current.dist + e.deltaY * 0.01, 3.5, 16);
+      st.current.dist = THREE.MathUtils.clamp(st.current.dist + e.deltaY * 0.004, 3.5, 16);
     };
     el.addEventListener("pointerdown", down);
     window.addEventListener("pointermove", move);
@@ -177,6 +147,9 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
     // Face the diorama, camera on the far side of the road.
     s.heading = station.side === 0 ? Math.PI : Math.atan2(station.side, 0);
     s.yaw = station.side === 0 ? 0 : Math.atan2(-station.side, 0.6);
+    s.dragYaw = s.dragPitch = 0;
+    s.vel.set(0, 0, 0);
+    s.y = s.vy = 0;
     s.ap.target = teleport.index;
     s.ap.dwell = 0;
     camera.position.copy(s.pos).add(new THREE.Vector3(Math.sin(s.yaw) * 7, 4, Math.cos(s.yaw) * 7));
@@ -216,8 +189,20 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
       s.cine = null;
       if (P.autopilot) P.onUserInput?.();
     }
-    if (input.keys.has("camL")) s.yaw += dt * 1.8;
-    if (input.keys.has("camR")) s.yaw -= dt * 1.8;
+    if (input.keys.has("camL")) s.yaw += dt * 1.1;
+    if (input.keys.has("camR")) s.yaw -= dt * 1.1;
+    // Ease queued drag rotation in over a few frames.
+    if (s.dragYaw || s.dragPitch) {
+      const f = damp(9, dt);
+      const dy = s.dragYaw * f;
+      const dp = s.dragPitch * f;
+      s.yaw += dy;
+      s.pitch = THREE.MathUtils.clamp(s.pitch + dp, 0.05, 1.2);
+      s.dragYaw -= dy;
+      s.dragPitch -= dp;
+      if (Math.abs(s.dragYaw) < 1e-4) s.dragYaw = 0;
+      if (Math.abs(s.dragPitch) < 1e-4) s.dragPitch = 0;
+    }
 
     let vx = 0;
     let vz = 0;
@@ -273,15 +258,46 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
       }
     }
 
-    s.speed = THREE.MathUtils.lerp(s.speed, targetSpeed, damp(10, dt));
-    if (targetSpeed > 0.01) {
-      const h = Math.atan2(vx, vz);
-      s.heading += angleDelta(s.heading, h) * damp(12, dt);
+    /* ---------------- physics: momentum, friction, jump, gravity */
+    const grounded = s.y <= 0.0001;
+    if (grounded) s.lastGround = now;
+    // Accelerate toward the wanted velocity; brake harder than you speed up (snappy but never twitchy).
+    const wantX = vx * targetSpeed;
+    const wantZ = vz * targetSpeed;
+    const accel = targetSpeed > 0.01 ? (grounded ? ACCEL : AIR_ACCEL) : grounded ? FRICTION : AIR_ACCEL * 0.5;
+    const f = damp(accel, dt);
+    s.vel.x += (wantX - s.vel.x) * f;
+    s.vel.z += (wantZ - s.vel.z) * f;
+    s.speed = Math.hypot(s.vel.x, s.vel.z);
+    if (s.speed > 0.35) s.heading += angleDelta(s.heading, Math.atan2(s.vel.x, s.vel.z)) * damp(grounded ? 10 : 4, dt);
+
+    // Jump: buffered press + coyote time, so it forgives slightly early or late taps.
+    const jumpHeld = input.keys.has("jump");
+    if (jumpHeld && !s.jumpWas) s.jumpBuffer = now;
+    s.jumpWas = jumpHeld;
+    if (now - s.jumpBuffer < 140 && now - s.lastGround < 120 && s.vy <= 0) {
+      s.vy = JUMP_V;
+      s.jumpBuffer = 0;
+      s.lastGround = 0;
+      s.cine = null;
+      if (!s.moved) {
+        s.moved = true;
+        P.onMoved?.();
+      }
     }
-    const mvx = Math.sin(s.heading) * s.speed * dt;
-    const mvz = Math.cos(s.heading) * s.speed * dt;
-    s.pos.x += mvx;
-    s.pos.z += mvz;
+    // Shorter hop when the button is released early (variable jump height).
+    const g = s.vy > 0 && !jumpHeld ? GRAVITY * 1.8 : GRAVITY;
+    s.vy -= g * dt;
+    s.y += s.vy * dt;
+    if (s.y <= 0) {
+      if (s.vy < -4) s.land = 1; // landing squash
+      s.y = 0;
+      s.vy = 0;
+    }
+    s.land = Math.max(0, s.land - dt * 5);
+
+    s.pos.x += s.vel.x * dt;
+    s.pos.z += s.vel.z * dt;
 
     /* ---------------- collisions & bounds */
     for (const c of COLLIDER_LIST) {
@@ -290,8 +306,16 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
       const d = Math.hypot(dx, dz);
       const min = c.r + 0.35;
       if (d < min && d > 1e-4) {
-        s.pos.x = c.x + (dx / d) * min;
-        s.pos.z = c.z + (dz / d) * min;
+        const nx = dx / d;
+        const nz = dz / d;
+        s.pos.x = c.x + nx * min;
+        s.pos.z = c.z + nz * min;
+        // Slide along the obstacle: drop only the part of the velocity pushing into it.
+        const into = s.vel.x * nx + s.vel.z * nz;
+        if (into < 0) {
+          s.vel.x -= into * nx;
+          s.vel.z -= into * nz;
+        }
       }
     }
     s.pos.z = THREE.MathUtils.clamp(s.pos.z, END_Z - 24, START_Z + 14);
@@ -301,11 +325,26 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
     runtime.player.copy(s.pos);
     runtime.progress = progressAt(s.pos.z);
 
+    /* ---------------- pickups (collectibles, mini-game targets) */
+    for (const [id, p] of pickups) {
+      const dx = p.x - s.pos.x;
+      const dy = p.y - (s.y + 0.95);
+      const dz = p.z - s.pos.z;
+      if (dx * dx + dz * dz < 1.1 && Math.abs(dy) < 1.15) {
+        pickups.delete(id);
+        P.onPickup?.(id);
+      }
+    }
+
     /* ---------------- character pose */
     const b = body.current;
     if (b) {
-      b.position.copy(s.pos);
+      b.position.set(s.pos.x, s.y, s.pos.z);
       b.rotation.y = s.heading;
+      // Squash on landing, stretch while rising.
+      const sq = s.land * 0.18;
+      const st2 = s.vy > 0 ? Math.min(0.1, s.vy * 0.012) : 0;
+      b.scale.set(1 + sq * 0.6, 1 - sq + st2, 1 + sq * 0.6);
       const k = parts.current;
       const moving = s.speed / RUN;
       s.phase += dt * (4 + s.speed * 1.3) * (s.speed > 0.2 ? 1 : 0);
@@ -313,10 +352,27 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
       if (k.legL) {
         k.legL.rotation.x = swing;
         k.legR.rotation.x = -swing;
+        // knees bend on the back-swing, elbows stay softly bent
+        k.shinL.rotation.x = Math.max(0, -Math.sin(s.phase - 0.6)) * 0.9 * Math.min(1, moving * 2);
+        k.shinR.rotation.x = Math.max(0, Math.sin(s.phase - 0.6)) * 0.9 * Math.min(1, moving * 2);
         k.armL.rotation.x = -swing * 0.8;
         k.armR.rotation.x = swing * 0.8;
+        k.armL.rotation.z = -0.08;
+        k.armR.rotation.z = 0.08;
+        k.foreL.rotation.x = -0.3 - moving * 0.6;
+        k.foreR.rotation.x = -0.3 - moving * 0.6;
+        k.eyes.scale.y = (now / 1000) % 3.4 < 0.12 ? 0.1 : 1;
         k.hips.position.y = 0.95 + Math.abs(Math.cos(s.phase)) * 0.06 * Math.min(1, moving * 2) + (s.speed < 0.2 ? Math.sin(now / 600) * 0.008 : 0);
         k.torso.rotation.x = moving * 0.18;
+        if (s.y > 0.02) {
+          // Airborne pose: knees up, arms out.
+          k.legL.rotation.x = -0.7;
+          k.shinL.rotation.x = 1.1;
+          k.legR.rotation.x = 0.25;
+          k.shinR.rotation.x = 0.4;
+          k.armL.rotation.z = -1.1;
+          k.armR.rotation.z = 1.1;
+        }
         k.head.rotation.y = s.speed < 0.2 ? Math.sin(now / 1800) * 0.3 : 0;
       }
     }
@@ -354,16 +410,16 @@ export default function Player({ teleport, autopilot, cinematic, revealed, viewS
       // Keep the orbit yaw in sync so control resumes from roughly this angle.
       s.yaw = Math.atan2(camera.position.x - s.pos.x, camera.position.z - s.pos.z);
     } else {
-      const autoAlign = s.speed > 0.5 && now - s.lastDrag > 1600 && (P.autopilot || Math.abs(mv.y) >= Math.abs(mv.x) * 0.9);
-      if (autoAlign && mv.y >= -0.1) s.yaw += angleDelta(s.yaw, s.heading + Math.PI) * damp(1.6, dt);
+      const autoAlign = s.speed > 0.5 && now - s.lastDrag > 2500 && (P.autopilot || Math.abs(mv.y) >= Math.abs(mv.x) * 0.9);
+      if (autoAlign && mv.y >= -0.1) s.yaw += angleDelta(s.yaw, s.heading + Math.PI) * damp(0.9, dt);
       const cp = Math.cos(s.pitch);
       const desired = new THREE.Vector3(
         s.pos.x + Math.sin(s.yaw) * cp * s.dist,
-        s.pos.y + 1.4 + Math.sin(s.pitch) * s.dist,
+        s.y * 0.5 + 1.4 + Math.sin(s.pitch) * s.dist,
         s.pos.z + Math.cos(s.yaw) * cp * s.dist
       );
-      camera.position.lerp(desired, damp(7, dt));
-      s.look.lerp(new THREE.Vector3(s.pos.x, 1.35, s.pos.z), damp(10, dt));
+      camera.position.lerp(desired, damp(5, dt));
+      s.look.lerp(new THREE.Vector3(s.pos.x, 1.35 + s.y * 0.6, s.pos.z), damp(7, dt));
     }
     if (camera.position.y < 0.6) camera.position.y = 0.6;
     camera.lookAt(s.look);

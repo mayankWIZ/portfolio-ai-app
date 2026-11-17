@@ -1,6 +1,7 @@
 import { Billboard } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import Humanoid, { OUTFITS, animateIdle, humanoidParts } from "../components/Humanoid";
 import * as THREE from "three";
 import { AGENT_BY_KEY } from "../data/agents";
 import { CHAPTERS } from "./chapters";
@@ -30,56 +31,58 @@ function Signpost({ station }) {
   );
 }
 
-const _look = new THREE.Vector3();
 
 function StationAgent({ agentKey, position, active, onAsk, question }) {
   const agent = AGENT_BY_KEY[agentKey];
   const g = useRef();
-  const phase = useMemo(() => Math.random() * 6, []);
+  const body = useRef();
+  const parts = useRef({});
+  const seed = useMemo(() => Math.random() * 6, []);
+  const waveAmt = useRef(0);
+  useEffect(() => {
+    parts.current = humanoidParts(body.current);
+  }, []);
   useFrame(({ clock }) => {
     const o = g.current;
     if (!o) return;
-    const t = clock.elapsedTime + phase;
-    o.children[0].position.y = Math.abs(Math.sin(t * (active ? 3 : 1.4))) * (active ? 0.12 : 0.04);
-    _look.set(runtime.player.x, 0, runtime.player.z);
-    const yaw = Math.atan2(_look.x - position.x, _look.z - position.z);
+    const t = clock.elapsedTime;
+    const dx = runtime.player.x - position.x;
+    const dz = runtime.player.z - position.z;
+    const dist = Math.hypot(dx, dz);
+    // Turn the body slowly toward the visitor; the head tracks faster.
+    const yaw = Math.atan2(dx, dz);
     const d = THREE.MathUtils.euclideanModulo(yaw - o.rotation.y + Math.PI, Math.PI * 2) - Math.PI;
-    o.rotation.y += d * 0.08;
+    o.rotation.y += d * (dist < 16 ? 0.05 : 0.01);
+    // Wave when you walk up; "talk" while their chapter is open.
+    const waving = dist < 9 && (t + seed) % 7 < 2.4;
+    waveAmt.current = THREE.MathUtils.lerp(waveAmt.current, waving ? 1 : 0, 0.08);
+    animateIdle(parts.current, t, { seed, wave: waveAmt.current, talk: active ? 1 : 0, lookYaw: d });
   });
   return (
     <group ref={g} position={position}>
-      <group>
-        <mesh position={[0, 0.5, 0]} castShadow>
-          <capsuleGeometry args={[0.26, 0.5, 6, 16]} />
-          <meshStandardMaterial color={agent.color} roughness={0.35} />
-        </mesh>
-        <mesh position={[0, 1.2, 0]} castShadow>
-          <sphereGeometry args={[0.23, 24, 16]} />
-          <meshStandardMaterial color="#f1d3b8" roughness={0.6} />
-        </mesh>
-        {[-0.08, 0.08].map((x) => (
-          <mesh key={x} position={[x, 1.24, 0.2]}>
-            <sphereGeometry args={[0.035, 8, 8]} />
-            <meshStandardMaterial color="#0f172a" />
-          </mesh>
-        ))}
-      </group>
+      <Humanoid ref={body} outfit={OUTFITS[agentKey]} />
       <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.42, 0.52, 32]} />
-        <meshStandardMaterial color={agent.color} emissive={agent.color} emissiveIntensity={active ? 2 : 0.6} toneMapped={false} />
+        <ringGeometry args={[0.45, 0.56, 40]} />
+        <meshStandardMaterial color={agent.color} emissive={agent.color} emissiveIntensity={active ? 2.2 : 0.7} toneMapped={false} />
       </mesh>
       {/* A 3D billboard rather than drei <Html>: Html roots throw when unmounted with the journey. */}
-      <Billboard position={[0, 2.05, 0]} visible={active}>
+      <Billboard position={[0, 2.25, 0]}>
         <group
           onClick={(e) => {
-            if (!active || e.delta > 8) return;
+            if (e.delta > 8) return;
             e.stopPropagation();
             onAsk(agentKey, question);
           }}
-          onPointerOver={() => active && (document.body.style.cursor = "pointer")}
+          onPointerOver={() => (document.body.style.cursor = "pointer")}
           onPointerOut={() => (document.body.style.cursor = "")}
         >
-          <Panel size={[1.7, 0.5]} lines={[`Ask ${agent.name}`, agent.role]} opts={{ w: 512, h: 150, bg: "#020617", accent: agent.color, size: 62 }} glow={1} back={false} />
+          <Panel
+            size={active ? [1.7, 0.5] : [1.1, 0.32]}
+            lines={active ? [`Ask ${agent.name}`, agent.role] : [agent.name]}
+            opts={{ w: 512, h: 150, bg: "#020617", accent: agent.color, size: 62 }}
+            glow={1}
+            back={false}
+          />
         </group>
       </Billboard>
     </group>

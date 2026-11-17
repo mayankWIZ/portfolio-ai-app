@@ -126,6 +126,7 @@ export const CHAPTERS = [
     narration: `${crest.summary} This is where scale got serious: queues, workers and pipelines that never sleep.`,
     metrics: [metric("300K+"), metric("1M+"), metric("7K+"), metric("25+")],
     toggle: { label: "Simulate a traffic burst", on: "Burst: 3× events", off: "Steady traffic" },
+    game: "rush",
     inspect: [
       { label: "Event pipeline", text: crest.highlights[0] },
       { label: "Plugin rack", text: crest.highlights[2] },
@@ -151,6 +152,7 @@ export const CHAPTERS = [
       { value: "Zero-config", label: "gateway for IDE AI traffic" },
     ],
     toggle: { label: "Enforce policy", on: "Enforcing: risky requests blocked", off: "Monitor only" },
+    game: "policy",
     inspect: [
       { label: "Policy gate", text: ct.highlights[3] },
       { label: "Context library", text: ct.highlights[4] },

@@ -11,11 +11,14 @@ export const input = {
 /** Inspectable objects registered by the dioramas: key "chapter:index" → { chapter, index, label, pos } */
 export const hotspots = new Map();
 
+/** Collectible / mini-game targets currently in the world: id → { x, y, z }. The player picks them up by touch. */
+export const pickups = new Map();
+
 export const hotspotKey = (chapter, index) => `${chapter}:${index}`;
 
 const MOVE_KEYS = {
   KeyW: "f", ArrowUp: "f", KeyS: "b", ArrowDown: "b", KeyA: "l", ArrowLeft: "l", KeyD: "r", ArrowRight: "r",
-  ShiftLeft: "run", ShiftRight: "run", KeyZ: "camL", KeyX: "camR",
+  ShiftLeft: "run", ShiftRight: "run", Space: "jump", KeyZ: "camL", KeyX: "camR",
 };
 
 export function keyAction(code) {

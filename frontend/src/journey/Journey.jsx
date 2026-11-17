@@ -5,6 +5,8 @@ import AgentChat from "../components/AgentChat";
 import { CHAPTERS, FINALE_INDEX } from "./chapters";
 import { Coach, HowTo } from "./Guidance";
 import { ChapterPanel, Finale, Joystick, Legend, Tracker } from "./Hud";
+import { PolicyGame, RUSH_TIME, RushHud, RushResult } from "./MiniGames";
+import { COMMITS, rushTargets } from "./world";
 import { hotspots, input, keyAction } from "./store";
 import Story2D from "./Story2D";
 
@@ -12,6 +14,16 @@ const JourneyScene = lazy(() => import("./JourneyScene"));
 
 const STORAGE = "journey-progress-v1";
 const COACH_KEY = "journey-coach-v1";
+const GAMES_KEY = "journey-games-v1";
+
+function loadGames() {
+  try {
+    const g = JSON.parse(localStorage.getItem(GAMES_KEY) || "{}");
+    return { commits: new Set(g.commits || []), rushBest: g.rushBest ?? null, policyBest: g.policyBest ?? null };
+  } catch {
+    return { commits: new Set(), rushBest: null, policyBest: null };
+  }
+}
 
 function coachStart() {
   try {
@@ -72,6 +84,12 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
     }
   }, []);
   const [ready, setReady] = useState(false);
+  const initialGames = useMemo(loadGames, []);
+  const [commits, setCommits] = useState(initialGames.commits);
+  const [best, setBest] = useState({ rush: initialGames.rushBest, policy: initialGames.policyBest });
+  const [rush, setRush] = useState({ status: "idle", items: [], taken: new Set(), got: 0, start: 0, time: 0 });
+  const [policyOpen, setPolicyOpen] = useState(false);
+  const [toast, setToast] = useState(null);
   const visitedRef = useRef(visited);
   visitedRef.current = visited;
   const autopilotRef = useRef(autopilot);
@@ -80,6 +98,63 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
   const zoneRef = useRef(null);
 
   useEffect(() => saveProgress(visited, revealed), [visited, revealed]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(GAMES_KEY, JSON.stringify({ commits: [...commits], rushBest: best.rush, policyBest: best.policy }));
+    } catch {
+      /* ignore */
+    }
+  }, [commits, best]);
+
+  /* ---------------------------------------------------------------- mini-games */
+
+  const flash = useCallback((text) => {
+    setToast({ text, at: Date.now() });
+  }, []);
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 1600);
+    return () => clearTimeout(id);
+  }, [toast]);
+
+  const startRush = useCallback(() => {
+    const crest = CHAPTERS.findIndex((c) => c.game === "rush");
+    setAutopilot(false);
+    setCollapsed(true);
+    setRush({ status: "playing", items: rushTargets(crest), taken: new Set(), got: 0, start: performance.now(), time: 0 });
+  }, []);
+
+  const onPickup = useCallback(
+    (id) => {
+      if (id.startsWith("c")) {
+        setCommits((c) => {
+          const n = new Set(c).add(id);
+          flash(n.size === COMMITS.length ? `✦ All ${COMMITS.length} commits collected!` : `+1 commit ✦ ${n.size}/${COMMITS.length}`);
+          return n;
+        });
+      } else if (id.startsWith("r")) {
+        setRush((r) => {
+          if (r.status !== "playing" || r.taken.has(id)) return r;
+          const taken = new Set(r.taken).add(id);
+          const got = taken.size;
+          if (got === r.items.length) {
+            const time = (performance.now() - r.start) / 1000;
+            setBest((b) => ({ ...b, rush: b.rush == null ? time : Math.min(b.rush, time) }));
+            return { ...r, taken, got, status: "done", time };
+          }
+          return { ...r, taken, got };
+        });
+      }
+    },
+    [flash]
+  );
+
+  useEffect(() => {
+    if (rush.status !== "playing") return;
+    const left = RUSH_TIME * 1000 - (performance.now() - rush.start);
+    const id = setTimeout(() => setRush((r) => (r.status === "playing" ? { ...r, status: "done", time: RUSH_TIME } : r)), Math.max(0, left));
+    return () => clearTimeout(id);
+  }, [rush.status, rush.start]);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -148,7 +223,7 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
   /* ---------------------------------------------------------------- keyboard */
 
   const stateRef = useRef();
-  stateRef.current = { near, chat, finaleOpen, intro };
+  stateRef.current = { near, chat, finaleOpen, intro, policyOpen };
   useEffect(() => {
     if (mode !== "3d") return;
     const down = (e) => {
@@ -160,10 +235,12 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
         else onExit();
         return;
       }
-      if (s.finaleOpen) return;
+      if (s.finaleOpen || s.policyOpen) return;
       const act = keyAction(e.code);
       if (act) {
-        if (e.target.tagName === "BUTTON" && (e.code === "Space" || e.code === "Enter")) return;
+        if (e.target.tagName === "BUTTON" && e.code === "Enter") return;
+        // Space always means jump in the world; drop focus from a clicked HUD button so it doesn't re-press it.
+        if (e.code === "Space" && e.target.tagName === "BUTTON") e.target.blur();
         e.preventDefault();
         input.keys.add(act);
         if (s.intro && ["f", "b", "l", "r"].includes(act)) setIntro(false);
@@ -250,6 +327,7 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
             onReady={() => setTimeout(() => setReady(true), 150)}
             onPerfDrop={() => setQuality("low")}
             stations={{ active: zone, toggles, revealed, near, onInspect: reveal, onAsk: ask }}
+            games={{ commits, rushItems: rush.status === "playing" ? rush.items : [], rushTaken: rush.taken }}
             player={{
               teleport,
               autopilot,
@@ -261,6 +339,7 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
               onAutoReveal: reveal,
               onAutopilotEnd: () => setAutopilot(false),
               onUserInput: () => setAutopilot(false),
+              onPickup,
               onMoved: () => coachRef.current === "move" && setCoach("follow"),
               guide: autopilot || intro ? null : guideIndex,
             }}
@@ -276,7 +355,12 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
 
       {/* top bar */}
       <div className="journey-topbar">
-        <Tracker visited={visited} zone={zone} onJump={jump} />
+        <div className="flex min-w-0 flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+          <Tracker visited={visited} zone={zone} onJump={jump} />
+          <span className="journey-chip" title="Gold commits collected along the road (jump for the high ones)" aria-label={`${commits.size} of ${COMMITS.length} commits collected`}>
+            <span className="text-amber-300">✦</span> {commits.size}/{COMMITS.length}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           <button className={`journey-btn ${autopilot ? "journey-btn--on" : ""}`} onClick={startTour} aria-pressed={autopilot}>
             {autopilot ? "❚❚ Pause" : "▶"}<span className="ml-1 hidden sm:inline">{autopilot ? "tour" : "Guided tour"}</span><span className="ml-1 sm:hidden">{autopilot ? "" : "Tour"}</span>
@@ -314,6 +398,8 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
           onReveal={reveal}
           onAsk={ask}
           onJump={jump}
+          onPlay={(g) => (g === "rush" ? startRush() : (setAutopilot(false), setPolicyOpen(true)))}
+          best={best}
           reduced={reducedMotion}
           collapsed={collapsed}
           onCollapse={() => setCollapsed((c) => !c)}
@@ -358,12 +444,42 @@ export default function Journey({ webgl, reducedMotion, onExit }) {
         />
       )}
 
-      <Legend touch={touch} />
+      {rush.status === "playing" && <RushHud rush={rush} onQuit={() => setRush((r) => ({ ...r, status: "idle", items: [] }))} />}
+      {rush.status === "done" && (
+        <RushResult rush={rush} best={best.rush} onAgain={startRush} onClose={() => setRush((r) => ({ ...r, status: "idle", items: [] }))} />
+      )}
+      {toast && (
+        <div key={toast.at} className="journey-toast" role="status">
+          {toast.text}
+        </div>
+      )}
+      {touch && (
+        <button
+          className="journey-jump-btn"
+          aria-label="Jump"
+          onPointerDown={() => input.keys.add("jump")}
+          onPointerUp={() => input.keys.delete("jump")}
+          onPointerCancel={() => input.keys.delete("jump")}
+          onPointerLeave={() => input.keys.delete("jump")}
+        >
+          ⤒<span className="block text-[10px]">Jump</span>
+        </button>
+      )}
+      {policyOpen && (
+        <PolicyGame
+          best={best.policy}
+          onDone={(score) => setBest((b) => ({ ...b, policy: Math.max(b.policy ?? 0, score) }))}
+          onClose={() => setPolicyOpen(false)}
+        />
+      )}
+
+      <Legend touch={touch} defaultOpen={!touch && coach === "done"} />
       {touch && <Joystick />}
       {chatDock}
 
       {finaleOpen && (
         <Finale
+          games={{ commits: commits.size, totalCommits: COMMITS.length, rushBest: best.rush, policyBest: best.policy }}
           visited={visited}
           revealed={revealed}
           onJump={jump}

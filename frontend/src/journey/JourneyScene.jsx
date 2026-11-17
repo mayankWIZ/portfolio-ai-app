@@ -3,6 +3,7 @@ import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
+import { Commits, RushOrbs } from "./Games";
 import Player from "./Player";
 import { Atmosphere, Birds, Clouds, Fireflies, Flowers, Ground, Lamps, Mountains, Pads, Road, Rocks, Stars, Trees } from "./Scenery";
 import Stations from "./Stations";
@@ -19,7 +20,7 @@ function FirstFrame({ onReady }) {
   return null;
 }
 
-export default function JourneyScene({ quality, onPerfDrop, onReady, stations, player }) {
+export default function JourneyScene({ quality, onPerfDrop, onReady, stations, player, games }) {
   const high = quality === "high";
   return (
     <Canvas
@@ -46,6 +47,8 @@ export default function JourneyScene({ quality, onPerfDrop, onReady, stations, p
       <Birds />
       <Fireflies quality={quality} />
       <Stations {...stations} quality={quality} />
+      <Commits taken={games.commits} />
+      <RushOrbs items={games.rushItems} taken={games.rushTaken} />
       <Player {...player} />
     </Canvas>
   );

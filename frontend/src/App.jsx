@@ -161,7 +161,7 @@ export default function App() {
             <button className="journey-cta !px-3 sm:!px-4" onClick={openJourney} aria-label="Explore my career in 3D">
               <span aria-hidden="true">🎮</span> Explore<span className="hidden lg:inline"> in 3D</span>
             </button>
-            <button className="btn-primary hidden sm:inline-flex" onClick={() => select(selected || "welcome")}>
+            <button className="btn-primary hidden whitespace-nowrap lg:inline-flex" onClick={() => select(selected || "welcome")}>
               Talk to the agents
             </button>
           </div>
