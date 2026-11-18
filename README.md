@@ -50,6 +50,9 @@ cd ../frontend && npm install && npm run dev      # http://localhost:5173
 
 ## Deploy (free)
 
+Full guide (what runs where, why, settings, manual deploys, rollback, troubleshooting): [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+
 - **Backend → Render** (free web service, Docker): `render.yaml` is a Blueprint. The free plan sleeps after
   15 minutes idle and takes ~1 minute to wake; the frontend pings `/api/health` on load and shows "waking the server".
   The image clones the pybot fork at build time (`PYBOT_REF`, default `main`).
